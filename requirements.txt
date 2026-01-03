@@ -1,0 +1,8 @@
+# PS5 Dump Runner FTP Installer - Runtime Dependencies
+# Python 3.11+ required
+
+# HTTP client for GitHub API integration
+requests>=2.31.0,<3.0.0
+
+# Secure credential storage (Windows Credential Manager, macOS Keychain, Linux Secret Service)
+keyring>=24.0.0,<26.0.0

@@ -1,0 +1,11 @@
+{
+  "last_host": "192.168.1.100",
+  "last_port": 2121,
+  "last_username": "ps5user",
+  "passive_mode": true,
+  "timeout": 60,
+  "window_width": 1024,
+  "window_height": 768,
+  "download_path": "C:\\Downloads\\PS5",
+  "auto_check_updates": false
+}

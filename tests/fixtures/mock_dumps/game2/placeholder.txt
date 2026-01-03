@@ -1,0 +1,2 @@
+This directory simulates another game dump directory on PS5.
+Used for testing batch upload operations.
