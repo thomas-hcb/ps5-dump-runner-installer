@@ -49,37 +49,37 @@
 
 ### Utils Module (Cross-Cutting)
 
-- [ ] T013 [P] Implement logging configuration in src/utils/logging.py with PII redaction
-- [ ] T014 [P] Implement input validators in src/utils/validators.py (IP address, port, path validation)
-- [ ] T015 [P] Implement background task helpers in src/utils/threading.py (ThreadedTask class, queue-based GUI updates)
+- [x] T013 [P] Implement logging configuration in src/utils/logging.py with PII redaction
+- [x] T014 [P] Implement input validators in src/utils/validators.py (IP address, port, path validation)
+- [x] T015 [P] Implement background task helpers in src/utils/threading.py (ThreadedTask class, queue-based GUI updates)
 
 ### Config Module (Settings Infrastructure)
 
-- [ ] T016 [P] Implement path constants and discovery in src/config/paths.py (APPDATA paths, SCAN_PATHS list)
-- [ ] T017 Implement AppSettings dataclass in src/config/settings.py per data-model.md
-- [ ] T018 Implement SettingsManager in src/config/settings.py (load, save, reset methods)
-- [ ] T019 [P] Implement CredentialManager in src/config/credentials.py using keyring library
+- [x] T016 [P] Implement path constants and discovery in src/config/paths.py (APPDATA paths, SCAN_PATHS list)
+- [x] T017 Implement AppSettings dataclass in src/config/settings.py per data-model.md
+- [x] T018 Implement SettingsManager in src/config/settings.py (load, save, reset methods)
+- [x] T019 [P] Implement CredentialManager in src/config/credentials.py using keyring library
 
 ### FTP Module (Core Exceptions)
 
-- [ ] T020 [P] Define FTP exceptions in src/ftp/exceptions.py (ConnectionError, AuthenticationError, NotConnectedError, UploadError)
+- [x] T020 [P] Define FTP exceptions in src/ftp/exceptions.py (ConnectionError, AuthenticationError, NotConnectedError, UploadError)
 
 ### Data Types (Shared Enums and Dataclasses)
 
-- [ ] T021 [P] Implement ConnectionState enum in src/ftp/connection.py
-- [ ] T022 [P] Implement FTPConnectionConfig dataclass in src/ftp/connection.py
-- [ ] T023 [P] Implement LocationType enum in src/ftp/scanner.py
-- [ ] T024 [P] Implement InstallationStatus enum in src/ftp/scanner.py
-- [ ] T025 [P] Implement GameDump dataclass in src/ftp/scanner.py
-- [ ] T026 [P] Implement UploadProgress and UploadResult dataclasses in src/ftp/uploader.py
-- [ ] T027 [P] Implement ReleaseSource enum in src/updater/release.py
-- [ ] T028 [P] Implement DumpRunnerRelease dataclass in src/updater/release.py
+- [x] T021 [P] Implement ConnectionState enum in src/ftp/connection.py
+- [x] T022 [P] Implement FTPConnectionConfig dataclass in src/ftp/connection.py
+- [x] T023 [P] Implement LocationType enum in src/ftp/scanner.py
+- [x] T024 [P] Implement InstallationStatus enum in src/ftp/scanner.py
+- [x] T025 [P] Implement GameDump dataclass in src/ftp/scanner.py
+- [x] T026 [P] Implement UploadProgress and UploadResult dataclasses in src/ftp/uploader.py
+- [x] T027 [P] Implement ReleaseSource enum in src/updater/release.py
+- [x] T028 [P] Implement DumpRunnerRelease dataclass in src/updater/release.py
 
 ### Base Tests Setup
 
-- [ ] T029 Create tests/unit/__init__.py
-- [ ] T030 Create tests/integration/__init__.py
-- [ ] T031 [P] Create tests/fixtures/ directory with mock_dumps/, sample_releases/, test_configs/
+- [x] T029 Create tests/unit/__init__.py
+- [x] T030 Create tests/integration/__init__.py
+- [x] T031 [P] Create tests/fixtures/ directory with mock_dumps/, sample_releases/, test_configs/
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
