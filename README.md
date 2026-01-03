@@ -25,23 +25,7 @@
 
 ## Installation
 
-### From Source
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/ps5-dump-runner-installer.git
-cd ps5-dump-runner-installer
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
-python -m src.main
-```
-
-### From Executable
-
-Download the latest release from the Releases page and run `PS5DumpRunnerInstaller.exe`.
+Download the latest release from the [Releases](https://github.com/yourusername/ps5-dump-runner-installer/releases) page and run `PS5DumpRunnerInstaller.exe`.
 
 ---
 
@@ -163,6 +147,13 @@ Downloaded files are cached locally at:
 - **Linux**: `~/.config/PS5DumpRunnerInstaller/cache/releases/`
 - **macOS**: `~/Library/Application Support/PS5DumpRunnerInstaller/cache/releases/`
 
+## Logs Directory
+
+Application logs are stored at:
+- **Windows**: `%APPDATA%\PS5DumpRunnerInstaller\logs\`
+- **Linux**: `~/.config/PS5DumpRunnerInstaller/logs/`
+- **macOS**: `~/Library/Application Support/PS5DumpRunnerInstaller/logs/`
+
 ---
 
 ## Troubleshooting
@@ -186,6 +177,20 @@ Downloaded files are cached locally at:
 
 ## Development
 
+### Running from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/ps5-dump-runner-installer.git
+cd ps5-dump-runner-installer
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python -m src.main
+```
+
 ### Running Tests
 
 ```bash
@@ -198,15 +203,54 @@ pytest --cov=src --cov-report=html
 
 ### Building Executable
 
-```bash
-# Using the spec file (recommended)
-pyinstaller build/ps5-dump-runner-installer.spec
+#### Prerequisites
 
-# Or manually
-pyinstaller --onefile --windowed --name "PS5DumpRunnerInstaller" --icon resources/icons/app_icon.ico src/main.py
+1. **Install Python 3.11+** from [python.org](https://www.python.org/downloads/)
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
+   ```
+3. **Install PyInstaller**:
+   ```bash
+   pip install pyinstaller
+   ```
+
+#### Build Steps
+
+1. **Clone the repository** (if you haven't already):
+   ```bash
+   git clone https://github.com/thomas-hcb/ps5-dump-runner-installer.git
+   cd ps5-dump-runner-installer
+   ```
+
+2. **Build using the spec file** (recommended):
+   ```bash
+   python -m PyInstaller build/ps5-dump-runner-installer.spec
+   ```
+
+   Or build manually:
+   ```bash
+   python -m PyInstaller --onefile --windowed --name "PS5DumpRunnerInstaller" --icon resources/icons/app_icon.ico src/main.py
+   ```
+
+3. **Find the executable** at `build/dist/PS5DumpRunnerInstaller.exe`
+
+#### Build Output
+
+```
+build/
+├── dist/
+│   └── PS5DumpRunnerInstaller.exe    # The final executable (~14MB)
+├── build/                             # Intermediate build files
+└── ps5-dump-runner-installer.spec     # PyInstaller configuration
 ```
 
-The built executable will be in `build/dist/PS5DumpRunnerInstaller.exe`.
+#### Troubleshooting Build Issues
+
+- **"Module not found" errors**: Ensure all dependencies are installed with `pip install -r requirements.txt`
+- **Icon not found**: Verify `resources/icons/app_icon.ico` exists
+- **Antivirus blocking**: Some antivirus software may flag PyInstaller executables; add an exception if needed
 
 ---
 
