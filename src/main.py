@@ -26,6 +26,7 @@ from .ftp.uploader import FileUploader, UploadProgress, UploadResult
 from .gui.main_window import MainWindow, AppCallbacks
 from .gui.upload_dialog import UploadDialog
 from .gui.download_dialog import DownloadDialog
+from .gui.settings_dialog import SettingsDialog
 from .updater.downloader import ReleaseDownloader, DownloadProgress
 from .updater.github_client import GitHubConnectionError, GitHubError
 from .updater.release import DumpRunnerRelease
@@ -488,6 +489,44 @@ class Application(AppCallbacks):
             self._current_release.elf_path,
             self._current_release.js_path
         )
+
+    def on_show_settings(self) -> None:
+        """Handle settings dialog request from GUI."""
+        self._logger.info("Settings dialog requested")
+
+        def on_save(settings: AppSettings) -> None:
+            """Handle settings save."""
+            self._settings = settings
+            self._settings_manager.save(settings)
+            self._logger.info("Settings saved")
+
+        def on_clear_credentials() -> None:
+            """Handle clear credentials."""
+            self.on_clear_credentials()
+
+        SettingsDialog(
+            self._root,
+            settings=self._settings,
+            on_save=on_save,
+            on_clear_credentials=on_clear_credentials
+        )
+
+    def on_clear_credentials(self) -> None:
+        """Handle clear credentials request from GUI."""
+        self._logger.info("Clearing saved credentials")
+
+        # Clear password for the current saved host/user if any
+        if self._settings.last_host and self._settings.last_username:
+            self._credential_manager.delete_password(
+                self._settings.last_host,
+                self._settings.last_username
+            )
+            self._logger.info(
+                f"Cleared credentials for {self._settings.last_host}:{self._settings.last_username}"
+            )
+
+        # Clear the password field in the connection panel
+        self._window.clear_password()
 
     def _check_cached_release(self) -> None:
         """Check for cached release on startup."""

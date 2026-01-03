@@ -167,17 +167,17 @@
 
 ### Tests for User Story 5
 
-- [ ] T055 [P] [US5] Unit test for SettingsManager in tests/unit/test_settings.py (load, save, defaults)
-- [ ] T056 [P] [US5] Unit test for CredentialManager in tests/unit/test_settings.py (save, get, delete password)
+- [x] T055 [P] [US5] Unit test for SettingsManager in tests/unit/test_settings.py (load, save, defaults)
+- [x] T056 [P] [US5] Unit test for CredentialManager in tests/unit/test_settings.py (save, get, delete password)
 
 ### Implementation for User Story 5
 
-- [ ] T057 [US5] Create SettingsDialog in src/gui/settings_dialog.py (preferences, clear credentials button)
-- [ ] T058 [US5] Add Settings menu item to MainWindow
-- [ ] T059 [US5] Load saved settings on app startup in src/main.py
-- [ ] T060 [US5] Save settings on successful connection in src/main.py
-- [ ] T061 [US5] Pre-populate connection form with saved values in ConnectionPanel
-- [ ] T062 [US5] Implement "Clear Saved Credentials" action
+- [x] T057 [US5] Create SettingsDialog in src/gui/settings_dialog.py (preferences, clear credentials button)
+- [x] T058 [US5] Add Settings menu item to MainWindow
+- [x] T059 [US5] Load saved settings on app startup in src/main.py
+- [x] T060 [US5] Save settings on successful connection in src/main.py
+- [x] T061 [US5] Pre-populate connection form with saved values in ConnectionPanel
+- [x] T062 [US5] Implement "Clear Saved Credentials" action
 
 **Checkpoint**: User Story 5 complete - settings persist across sessions
 
@@ -302,7 +302,7 @@ Task: "Create ConnectionPanel widget in src/gui/connection_panel.py"
 | Phase 2: Foundational | 19 | - | ✅ Complete |
 | Phase 3: US1 (Connect + Scan) | 13 | P1 | ✅ Complete |
 | Phase 4: US2+US3 (Upload + Custom Files + GitHub) | 21 | P1+P2 | ✅ Complete |
-| Phase 5: US5 (Settings) | 8 | P3 | ⏳ Pending |
+| Phase 5: US5 (Settings) | 8 | P3 | ✅ Complete |
 | Phase 6: Polish | 10 | - | ⏳ Pending |
 | **Total** | **83** | | |
 
