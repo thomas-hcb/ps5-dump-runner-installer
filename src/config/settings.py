@@ -17,7 +17,7 @@ class AppSettings:
 
     # FTP connection defaults
     last_host: str = ""
-    last_port: int = 2121
+    last_port: int = 1337
     last_username: str = "anonymous"
     passive_mode: bool = True
     timeout: int = 30

@@ -31,7 +31,7 @@ class ConnectionState(Enum):
 class FTPConnectionConfig:
     """FTP connection configuration."""
     host: str
-    port: int = 2121
+    port: int = 1337
     username: str = "anonymous"
     passive_mode: bool = True
     timeout: int = 30
