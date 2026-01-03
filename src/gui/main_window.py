@@ -42,6 +42,14 @@ class AppCallbacks(Protocol):
         """Called when user wants to upload official release to selected dumps."""
         ...
 
+    def on_show_settings(self) -> None:
+        """Called when user opens settings dialog."""
+        ...
+
+    def on_clear_credentials(self) -> None:
+        """Called when user clears saved credentials."""
+        ...
+
 
 class MainWindow:
     """
@@ -255,8 +263,8 @@ class MainWindow:
 
     def _show_settings(self) -> None:
         """Show settings dialog."""
-        # Will be implemented in US5
-        messagebox.showinfo("Settings", "Settings dialog coming soon.")
+        if self._callbacks:
+            self._callbacks.on_show_settings()
 
     def _show_about(self) -> None:
         """Show about dialog."""
@@ -315,6 +323,10 @@ class MainWindow:
     ) -> None:
         """Pre-populate connection fields with saved values."""
         self._connection_panel.set_values(host, port, username, password)
+
+    def clear_password(self) -> None:
+        """Clear the password field."""
+        self._connection_panel.clear_password()
 
     def update_status(self, message: str) -> None:
         """
