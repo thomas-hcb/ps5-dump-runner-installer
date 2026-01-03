@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable, List, Optional, Set
 
-from ..ftp.scanner import GameDump, LocationType, InstallationStatus
+from ..ftp.scanner import GameDump, LocationType
 
 
 class DumpList(ttk.Frame):
@@ -118,9 +118,10 @@ class DumpList(ttk.Frame):
         Args:
             dumps: List of GameDump objects to display
         """
-        # Clear existing items
-        for item in self._tree.get_children():
-            self._tree.delete(item)
+        # Clear existing items - delete all at once to avoid iteration issues
+        children = self._tree.get_children()
+        if children:
+            self._tree.delete(*children)
 
         self._dumps = dumps
         self._selected_paths.clear()
@@ -128,15 +129,13 @@ class DumpList(ttk.Frame):
 
         # Add new items
         for dump in dumps:
-            # Determine status text
-            if dump.installation_status == InstallationStatus.NOT_INSTALLED:
-                status = "Not Installed"
-            elif dump.installation_status == InstallationStatus.OFFICIAL:
-                status = "Official"
-            elif dump.installation_status == InstallationStatus.EXPERIMENTAL:
-                status = "Experimental"
+            # Determine status text based on actual file presence
+            if dump.has_elf and dump.has_js:
+                status = "Installed"
+            elif dump.has_elf or dump.has_js:
+                status = "Partial"
             else:
-                status = "Unknown" if dump.has_elf or dump.has_js else "Not Installed"
+                status = "Not Installed"
 
             # Determine location text
             location = {
@@ -242,8 +241,9 @@ class DumpList(ttk.Frame):
 
     def clear(self) -> None:
         """Clear the dump list."""
-        for item in self._tree.get_children():
-            self._tree.delete(item)
+        children = self._tree.get_children()
+        if children:
+            self._tree.delete(*children)
 
         self._dumps = []
         self._selected_paths.clear()

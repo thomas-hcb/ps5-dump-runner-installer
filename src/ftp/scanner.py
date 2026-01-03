@@ -3,6 +3,7 @@
 Scans PS5 directories for game dumps and tracks their status.
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -12,6 +13,8 @@ from typing import List, Optional
 from ..config.paths import SCAN_PATHS, get_location_type_from_path
 from .connection import FTPConnectionManager
 from .exceptions import FTPNotConnectedError
+
+logger = logging.getLogger("ps5_dump_runner.scanner")
 
 
 class LocationType(Enum):
@@ -124,10 +127,19 @@ class DumpScanner:
         self._dumps = []
         ftp = self._connection.ftp
 
+        # Send NOOP to verify connection is still alive
+        try:
+            ftp.voidcmd("NOOP")
+        except Exception:
+            # Connection is dead, re-raise as connection error
+            raise OSError("[WinError 10061] Connection lost - FTP server not responding")
+
         for base_path in SCAN_PATHS:
             try:
-                # Try to list the directory
-                entries = ftp.nlst(base_path)
+                logger.debug(f"Scanning path: {base_path}")
+                # Try to list the directory with retry
+                entries = self._nlst_with_retry(ftp, base_path)
+                logger.debug(f"Found {len(entries)} entries in {base_path}")
 
                 for entry in entries:
                     # Skip if it's the base path itself
@@ -142,21 +154,74 @@ class DumpScanner:
 
                     # Check if it's a directory by trying to list it
                     try:
-                        ftp.nlst(full_path)
+                        self._nlst_with_retry(ftp, full_path)
                         # If we can list it, it's a directory
                         dump = GameDump.from_path(full_path)
                         self._check_installation_status(dump)
                         self._dumps.append(dump)
+                        logger.debug(f"Added dump: {dump.name}")
                     except error_perm:
                         # Not a directory or can't access, skip
+                        continue
+                    except Exception as e:
+                        # Log but continue with other entries
+                        logger.warning(f"Error checking {full_path}: {e}")
                         continue
 
             except error_perm:
                 # Path doesn't exist or can't access, skip
+                logger.debug(f"Path not accessible: {base_path}")
+                continue
+            except Exception as e:
+                # Log other errors but continue scanning other paths
+                logger.warning(f"Error scanning {base_path}: {e}")
                 continue
 
         self._last_scan = datetime.now()
+        logger.info(f"Scan complete: found {len(self._dumps)} dumps")
         return self._dumps
+
+    def _nlst_with_retry(self, ftp, path: str, retries: int = 2) -> list:
+        """
+        List directory with retry on transient connection errors.
+
+        Some FTP servers (like PS5) may drop data connections intermittently.
+
+        Args:
+            ftp: FTP connection object
+            path: Directory path to list
+            retries: Number of retry attempts
+
+        Returns:
+            List of entries from nlst
+
+        Raises:
+            error_perm: If path doesn't exist or permission denied
+            Exception: If all retries fail
+        """
+        import time
+        last_error = None
+
+        for attempt in range(retries + 1):
+            try:
+                return ftp.nlst(path)
+            except error_perm:
+                # Permission error, don't retry
+                raise
+            except Exception as e:
+                last_error = e
+                if attempt < retries:
+                    # Small delay before retry
+                    time.sleep(0.3)
+                    # Try to keep connection alive
+                    try:
+                        ftp.voidcmd("NOOP")
+                    except Exception:
+                        pass
+                    continue
+
+        # All retries failed
+        raise last_error
 
     def _check_installation_status(self, dump: GameDump) -> None:
         """
@@ -171,7 +236,7 @@ class DumpScanner:
         ftp = self._connection.ftp
 
         try:
-            files = ftp.nlst(dump.path)
+            files = self._nlst_with_retry(ftp, dump.path)
             file_names = [f.split("/")[-1] for f in files]
 
             dump.has_elf = "dump_runner.elf" in file_names

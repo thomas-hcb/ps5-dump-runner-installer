@@ -122,19 +122,19 @@
 
 ### Tests for User Story 2
 
-- [ ] T045 [P] [US2] Unit test for FileUploader in tests/unit/test_uploader.py (upload_to_dump, upload_batch, cancel)
-- [ ] T046 [P] [US2] Integration test for batch upload in tests/integration/test_ftp_workflow.py
+- [x] T045 [P] [US2] Unit test for FileUploader in tests/unit/test_uploader.py (upload_to_dump, upload_batch, cancel)
+- [x] T046 [P] [US2] Integration test for batch upload in tests/integration/test_ftp_workflow.py
 
 ### Implementation for User Story 2
 
-- [ ] T047 [US2] Implement FileUploader class in src/ftp/uploader.py (upload_to_dump, upload_batch, cancel methods)
-- [ ] T048 [P] [US2] Create ProgressBar widget in src/gui/widgets/progress_bar.py (percentage, speed, ETA)
-- [ ] T049 [US2] Create UploadDialog in src/gui/upload_dialog.py (per-dump progress, overall progress, cancel button)
-- [ ] T050 [US2] Add upload button and selection handling to MainWindow in src/gui/main_window.py
-- [ ] T051 [US2] Implement threaded upload with queue-based progress updates in src/main.py
-- [ ] T052 [US2] Add overwrite confirmation dialog before upload
-- [ ] T053 [US2] Handle partial failures (continue with remaining dumps, report failures separately)
-- [ ] T054 [US2] Add logging for upload operations with per-dump status
+- [x] T047 [US2] Implement FileUploader class in src/ftp/uploader.py (upload_to_dump, upload_batch, cancel methods)
+- [x] T048 [P] [US2] Create ProgressBar widget in src/gui/widgets/progress_bar.py (percentage, speed, ETA)
+- [x] T049 [US2] Create UploadDialog in src/gui/upload_dialog.py (per-dump progress, overall progress, cancel button)
+- [x] T050 [US2] Add upload button and selection handling to MainWindow in src/gui/main_window.py
+- [x] T051 [US2] Implement threaded upload with queue-based progress updates in src/main.py
+- [x] T052 [US2] Add overwrite confirmation dialog before upload
+- [x] T053 [US2] Handle partial failures (continue with remaining dumps, report failures separately)
+- [x] T054 [US2] Add logging for upload operations with per-dump status
 
 **Checkpoint**: User Stories 1 AND 2 complete - MVP functional (connect + batch upload)
 

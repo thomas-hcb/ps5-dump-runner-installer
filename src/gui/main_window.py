@@ -9,8 +9,10 @@ from typing import Callable, List, Optional, Protocol
 
 from .connection_panel import ConnectionPanel
 from .dump_list import DumpList
+from .upload_dialog import UploadDialog
 from ..ftp.scanner import GameDump
 from ..ftp.connection import ConnectionState
+from ..ftp.uploader import UploadProgress, UploadResult
 
 
 class AppCallbacks(Protocol):
