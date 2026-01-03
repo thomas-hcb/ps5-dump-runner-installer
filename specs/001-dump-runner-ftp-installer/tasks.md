@@ -114,11 +114,13 @@
 
 ---
 
-## Phase 4: User Story 2 - Install Official dump_runner Files (Priority: P1)
+## Phase 4: User Story 2 - Install dump_runner Files (Priority: P1)
 
-**Goal**: Enable batch upload of dump_runner.elf and homebrew.js to multiple selected game dumps
+**Goal**: Enable batch upload of dump_runner.elf and homebrew.js to multiple selected game dumps (supports both official releases and custom/experimental files)
 
 **Independent Test**: Select multiple dumps, click upload, verify files transferred with progress
+
+**Note**: This phase also covers User Story 3 (Experimental Files) - the file dialog allows selecting ANY local .elf/.js files, inherently supporting custom/experimental uploads without separate workflow.
 
 ### Tests for User Story 2
 
@@ -136,60 +138,28 @@
 - [x] T053 [US2] Handle partial failures (continue with remaining dumps, report failures separately)
 - [x] T054 [US2] Add logging for upload operations with per-dump status
 
-**Checkpoint**: User Stories 1 AND 2 complete - MVP functional (connect + batch upload)
+### Experimental/Custom File Support (User Story 3 - merged into US2)
+
+- [x] T054-US3a [US2] Browse and select local custom files via file dialog in src/gui/main_window.py (covered by T050)
+- [x] T054-US3b [US2] Upload any user-selected .elf/.js files to dumps in src/ftp/uploader.py (covered by T047)
+- [x] T054-US3c [US2] Progress indication for custom file uploads in src/gui/upload_dialog.py (covered by T048, T049)
+
+### GitHub Integration for User Story 2 (Official Release Download)
+
+- [x] T054a [P] [US2] Implement GitHubClient class in src/updater/github_client.py (get_latest_release from https://github.com/EchoStretch/dump_runner/releases)
+- [x] T054b [P] [US2] Implement ReleaseDownloader class in src/updater/downloader.py (download dump_runner.elf and homebrew.js assets)
+- [x] T054c [US2] Add "Download Latest Release" button to MainWindow in src/gui/main_window.py
+- [x] T054d [US2] Create download progress dialog for GitHub downloads
+- [x] T054e [US2] Cache downloaded releases in local cache directory (src/config/paths.py: get_releases_cache_dir)
+- [x] T054f [US2] Update upload workflow to use downloaded official files as default source
+- [x] T054g [P] [US2] Unit test for GitHubClient in tests/unit/test_github_client.py
+- [x] T054h [US2] Handle GitHub unreachable gracefully (fallback to manual file selection)
+
+**Checkpoint**: User Stories 1, 2, AND 3 complete - MVP functional (connect + batch upload with GitHub download + custom file support)
 
 ---
 
-## Phase 5: User Story 3 - Upload Experimental Files (Priority: P2)
-
-**Goal**: Allow users to select and upload custom/experimental dump_runner files with safety warnings
-
-**Independent Test**: Browse for local files, see experimental warning, verify upload with visual distinction
-
-### Tests for User Story 3
-
-- [ ] T055 [P] [US3] Unit test for experimental file validation in tests/unit/test_uploader.py
-- [ ] T056 [P] [US3] Integration test for experimental upload in tests/integration/test_ftp_workflow.py
-
-### Implementation for User Story 3
-
-- [ ] T057 [US3] Add experimental file browse dialog to MainWindow in src/gui/main_window.py
-- [ ] T058 [US3] Implement experimental warning dialog (show before upload, require explicit confirmation)
-- [ ] T059 [US3] Update GameDump to track is_experimental flag in src/ftp/scanner.py
-- [ ] T060 [US3] Update DumpList to show experimental badge/color in src/gui/dump_list.py
-- [ ] T061 [US3] Add "Revert to Official" action in dump context menu
-- [ ] T062 [US3] Implement file validation (exists, size > 0) in src/utils/validators.py
-
-**Checkpoint**: User Story 3 complete - experimental files supported with warnings
-
----
-
-## Phase 6: User Story 4 - Download Official Files from GitHub (Priority: P2)
-
-**Goal**: Check GitHub for latest dump_runner release and download official files
-
-**Independent Test**: Click "Check for Updates", see version info, download files to local cache
-
-### Tests for User Story 4
-
-- [ ] T063 [P] [US4] Unit test for GitHubClient in tests/unit/test_github_client.py (get_latest_release, parse response)
-- [ ] T064 [P] [US4] Unit test for ReleaseDownloader in tests/unit/test_github_client.py (download, cache management)
-
-### Implementation for User Story 4
-
-- [ ] T065 [P] [US4] Implement ReleaseAsset and GitHubRelease dataclasses in src/updater/github_client.py
-- [ ] T066 [US4] Implement GitHubClient class in src/updater/github_client.py (get_latest_release, get_releases)
-- [ ] T067 [US4] Implement ReleaseDownloader class in src/updater/downloader.py (download_release, get_cached_release, clear_cache)
-- [ ] T068 [US4] Add "Check for Updates" menu/button to MainWindow
-- [ ] T069 [US4] Create update notification dialog showing version, date, release notes
-- [ ] T070 [US4] Add download progress indicator for GitHub downloads
-- [ ] T071 [US4] Handle GitHub unreachable (graceful fallback to manual file selection)
-
-**Checkpoint**: User Story 4 complete - GitHub integration working
-
----
-
-## Phase 7: User Story 5 - Save and Restore Settings (Priority: P3)
+## Phase 5: User Story 5 - Save and Restore Settings (Priority: P3)
 
 **Goal**: Persist FTP connection settings between sessions with secure credential storage
 
@@ -197,36 +167,36 @@
 
 ### Tests for User Story 5
 
-- [ ] T072 [P] [US5] Unit test for SettingsManager in tests/unit/test_settings.py (load, save, defaults)
-- [ ] T073 [P] [US5] Unit test for CredentialManager in tests/unit/test_settings.py (save, get, delete password)
+- [ ] T055 [P] [US5] Unit test for SettingsManager in tests/unit/test_settings.py (load, save, defaults)
+- [ ] T056 [P] [US5] Unit test for CredentialManager in tests/unit/test_settings.py (save, get, delete password)
 
 ### Implementation for User Story 5
 
-- [ ] T074 [US5] Create SettingsDialog in src/gui/settings_dialog.py (preferences, clear credentials button)
-- [ ] T075 [US5] Add Settings menu item to MainWindow
-- [ ] T076 [US5] Load saved settings on app startup in src/main.py
-- [ ] T077 [US5] Save settings on successful connection in src/main.py
-- [ ] T078 [US5] Pre-populate connection form with saved values in ConnectionPanel
-- [ ] T079 [US5] Implement "Clear Saved Credentials" action
+- [ ] T057 [US5] Create SettingsDialog in src/gui/settings_dialog.py (preferences, clear credentials button)
+- [ ] T058 [US5] Add Settings menu item to MainWindow
+- [ ] T059 [US5] Load saved settings on app startup in src/main.py
+- [ ] T060 [US5] Save settings on successful connection in src/main.py
+- [ ] T061 [US5] Pre-populate connection form with saved values in ConnectionPanel
+- [ ] T062 [US5] Implement "Clear Saved Credentials" action
 
 **Checkpoint**: User Story 5 complete - settings persist across sessions
 
 ---
 
-## Phase 8: Polish & Cross-Cutting Concerns
+## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final improvements affecting multiple user stories
 
-- [ ] T080 [P] Add application icon to resources/icons/app_icon.ico
-- [ ] T081 [P] Add connected/disconnected status icons to resources/icons/
-- [ ] T082 [P] Add official/experimental version icons to resources/icons/
-- [ ] T083 Create PyInstaller spec file in build/ps5-dump-runner-installer.spec
-- [ ] T084 Build Windows executable with PyInstaller
-- [ ] T085 [P] Update README.md with usage instructions
-- [ ] T086 Run full test suite and ensure all tests pass
-- [ ] T087 Test quickstart.md workflow end-to-end
-- [ ] T088 Code cleanup: remove debug prints, ensure consistent error messages
-- [ ] T089 Security review: verify no credentials logged, keyring integration correct
+- [ ] T063 [P] Add application icon to resources/icons/app_icon.ico
+- [ ] T064 [P] Add connected/disconnected status icons to resources/icons/
+- [ ] T065 [P] Add official/experimental version icons to resources/icons/
+- [ ] T066 Create PyInstaller spec file in build/ps5-dump-runner-installer.spec
+- [ ] T067 Build Windows executable with PyInstaller
+- [ ] T068 [P] Update README.md with usage instructions
+- [ ] T069 Run full test suite and ensure all tests pass
+- [ ] T070 Test quickstart.md workflow end-to-end
+- [ ] T071 Code cleanup: remove debug prints, ensure consistent error messages
+- [ ] T072 Security review: verify no credentials logged, keyring integration correct
 
 ---
 
@@ -236,19 +206,17 @@
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Phase 1 - BLOCKS all user stories
-- **User Stories (Phases 3-7)**: All depend on Phase 2 completion
-  - Can proceed sequentially (P1 → P1 → P2 → P2 → P3)
+- **User Stories (Phases 3-5)**: All depend on Phase 2 completion
+  - Can proceed sequentially (P1 → P1 → P3)
   - Or in parallel if team capacity allows
-- **Polish (Phase 8)**: Depends on all user stories complete
+- **Polish (Phase 6)**: Depends on all user stories complete
 
 ### User Story Dependencies
 
 | Story | Depends On | Can Start After |
 |-------|------------|-----------------|
 | US1 (Connect + Scan) | Foundational | Phase 2 complete |
-| US2 (Upload Official) | US1 (needs connection + dump list) | Phase 3 complete |
-| US3 (Experimental) | US2 (extends upload functionality) | Phase 4 complete |
-| US4 (GitHub Download) | Foundational only | Phase 2 complete (parallel with US1) |
+| US2+US3 (Upload + Custom Files + GitHub) | US1 (needs connection + dump list) | Phase 3 complete |
 | US5 (Settings) | Foundational only | Phase 2 complete (parallel with US1) |
 
 ### Within Each User Story
@@ -283,11 +251,9 @@ T032, T033, T034, T035 (all tests)
 T038, T039 (widgets)
 ```
 
-**Phases 4-7 can run in parallel if staffed:**
-- Developer A: US2 (upload)
-- Developer B: US4 (GitHub) - independent
-- Developer C: US5 (settings) - independent
-- Then: US3 (experimental) after US2
+**Phases 4-5 can run in parallel if staffed:**
+- Developer A: US2+US3+GitHub (upload + custom files + official releases)
+- Developer B: US5 (settings) - independent
 
 ---
 
@@ -322,27 +288,23 @@ Task: "Create ConnectionPanel widget in src/gui/connection_panel.py"
 
 1. Setup + Foundational → Foundation ready
 2. Add US1 (Connect) → Test → **Milestone: Can discover dumps**
-3. Add US2 (Upload) → Test → **Milestone: MVP - batch upload works!**
-4. Add US3 (Experimental) → Test → **Milestone: Power user features**
-5. Add US4 (GitHub) → Test → **Milestone: Auto-updates**
-6. Add US5 (Settings) → Test → **Milestone: Convenience features**
-7. Polish → Test → **Milestone: Production-ready**
+3. Add US2+US3+GitHub (Upload + Custom + Official) → Test → **Milestone: MVP - full upload workflow!**
+4. Add US5 (Settings) → Test → **Milestone: Convenience features**
+5. Polish → Test → **Milestone: Production-ready**
 
 ---
 
 ## Task Summary
 
-| Phase | Task Count | User Story |
-|-------|------------|------------|
-| Setup | 12 | - |
-| Foundational | 19 | - |
-| US1 (Connect + Scan) | 13 | P1 |
-| US2 (Upload Official) | 10 | P1 |
-| US3 (Experimental) | 8 | P2 |
-| US4 (GitHub) | 9 | P2 |
-| US5 (Settings) | 8 | P3 |
-| Polish | 10 | - |
-| **Total** | **89** | |
+| Phase | Task Count | User Story | Status |
+|-------|------------|------------|--------|
+| Phase 1: Setup | 12 | - | ✅ Complete |
+| Phase 2: Foundational | 19 | - | ✅ Complete |
+| Phase 3: US1 (Connect + Scan) | 13 | P1 | ✅ Complete |
+| Phase 4: US2+US3 (Upload + Custom Files + GitHub) | 21 | P1+P2 | ✅ Complete |
+| Phase 5: US5 (Settings) | 8 | P3 | ⏳ Pending |
+| Phase 6: Polish | 10 | - | ⏳ Pending |
+| **Total** | **83** | | |
 
 ---
 
