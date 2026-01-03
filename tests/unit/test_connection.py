@@ -27,7 +27,7 @@ class TestFTPConnectionConfig:
         """Test default configuration values."""
         config = FTPConnectionConfig(host="192.168.1.100")
         assert config.host == "192.168.1.100"
-        assert config.port == 2121
+        assert config.port == 1337
         assert config.username == "anonymous"
         assert config.passive_mode is True
         assert config.timeout == 30
@@ -95,7 +95,7 @@ class TestFTPConnectionManager:
 
         mock_ftp.connect.assert_called_once_with(
             host="192.168.1.100",
-            port=2121,
+            port=1337,
             timeout=30
         )
         mock_ftp.login.assert_called_once_with(user="anonymous", passwd="testpass")
