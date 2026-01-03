@@ -34,6 +34,14 @@ class AppCallbacks(Protocol):
         """Called when user wants to upload to selected dumps."""
         ...
 
+    def on_download_release(self) -> None:
+        """Called when user wants to download latest official release."""
+        ...
+
+    def on_upload_official(self, selected_dumps: List[GameDump]) -> None:
+        """Called when user wants to upload official release to selected dumps."""
+        ...
+
 
 class MainWindow:
     """
@@ -84,6 +92,8 @@ class MainWindow:
         # File menu
         file_menu = tk.Menu(self._menubar, tearoff=0)
         self._menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Download Latest Release...", command=self._handle_download_release)
+        file_menu.add_separator()
         file_menu.add_command(label="Settings...", command=self._show_settings)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self._on_exit)
@@ -114,11 +124,22 @@ class MainWindow:
         # Button panel
         self._button_panel = ttk.Frame(self._content_frame)
 
-        self._upload_btn = ttk.Button(
+        self._upload_official_btn = ttk.Button(
             self._button_panel,
-            text="Upload to Selected",
+            text="Upload Official",
+            command=self._handle_upload_official,
+            state=tk.DISABLED
+        )
+        self._upload_custom_btn = ttk.Button(
+            self._button_panel,
+            text="Upload Custom...",
             command=self._handle_upload,
             state=tk.DISABLED
+        )
+        self._download_btn = ttk.Button(
+            self._button_panel,
+            text="Download from GitHub",
+            command=self._handle_download_release
         )
         self._scan_btn = ttk.Button(
             self._button_panel,
@@ -131,6 +152,10 @@ class MainWindow:
             self._button_panel,
             text="0 selected"
         )
+
+        # Track if official release is available
+        self._has_official_release = False
+        self._official_version = ""
 
         # Status bar
         self._status_frame = ttk.Frame(self._root)
@@ -155,7 +180,9 @@ class MainWindow:
         # Button panel
         self._button_panel.pack(fill=tk.X, pady=5)
         self._scan_btn.pack(side=tk.LEFT, padx=5)
-        self._upload_btn.pack(side=tk.LEFT, padx=5)
+        self._download_btn.pack(side=tk.LEFT, padx=5)
+        self._upload_official_btn.pack(side=tk.LEFT, padx=5)
+        self._upload_custom_btn.pack(side=tk.LEFT, padx=5)
         self._selected_label.pack(side=tk.RIGHT, padx=10)
 
         # Status bar at bottom
@@ -182,7 +209,7 @@ class MainWindow:
             self._callbacks.on_scan()
 
     def _handle_upload(self) -> None:
-        """Handle Upload button click."""
+        """Handle Upload Custom button click."""
         selected = self._dump_list.get_selected_dumps()
         if not selected:
             messagebox.showwarning(
@@ -194,11 +221,37 @@ class MainWindow:
         if self._callbacks:
             self._callbacks.on_upload(selected)
 
+    def _handle_upload_official(self) -> None:
+        """Handle Upload Official button click."""
+        selected = self._dump_list.get_selected_dumps()
+        if not selected:
+            messagebox.showwarning(
+                "No Selection",
+                "Please select at least one dump to upload to."
+            )
+            return
+
+        if self._callbacks:
+            self._callbacks.on_upload_official(selected)
+
+    def _handle_download_release(self) -> None:
+        """Handle Download Latest Release button/menu click."""
+        if self._callbacks:
+            self._callbacks.on_download_release()
+
     def _handle_selection_changed(self, selected: List[GameDump]) -> None:
         """Handle selection change in dump list."""
         count = len(selected)
         self._selected_label.config(text=f"{count} selected")
-        self._upload_btn.config(state=tk.NORMAL if count > 0 else tk.DISABLED)
+
+        # Enable/disable upload buttons based on selection and available release
+        if count > 0:
+            self._upload_custom_btn.config(state=tk.NORMAL)
+            if self._has_official_release:
+                self._upload_official_btn.config(state=tk.NORMAL)
+        else:
+            self._upload_custom_btn.config(state=tk.DISABLED)
+            self._upload_official_btn.config(state=tk.DISABLED)
 
     def _show_settings(self) -> None:
         """Show settings dialog."""
@@ -234,7 +287,8 @@ class MainWindow:
             self.update_status("Connected to PS5")
         else:
             self._scan_btn.config(state=tk.DISABLED)
-            self._upload_btn.config(state=tk.DISABLED)
+            self._upload_custom_btn.config(state=tk.DISABLED)
+            self._upload_official_btn.config(state=tk.DISABLED)
             self._dump_list.clear()
 
             if state == ConnectionState.DISCONNECTED:
@@ -303,6 +357,24 @@ class MainWindow:
             message: Info message
         """
         messagebox.showinfo(title, message)
+
+    def set_official_release_available(self, available: bool, version: str = "") -> None:
+        """
+        Update UI to reflect official release availability.
+
+        Args:
+            available: True if official release files are available
+            version: Version string of the available release (stored but not displayed)
+        """
+        self._has_official_release = available
+        self._official_version = version
+
+        if available:
+            # Enable upload official if there's a selection
+            if self._dump_list.get_selected_count() > 0:
+                self._upload_official_btn.config(state=tk.NORMAL)
+        else:
+            self._upload_official_btn.config(state=tk.DISABLED)
 
     def run(self) -> None:
         """Start the main event loop."""

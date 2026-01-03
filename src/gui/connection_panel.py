@@ -69,7 +69,7 @@ class ConnectionPanel(ttk.LabelFrame):
         # Buttons
         self._connect_btn = ttk.Button(
             self,
-            text="Connect",
+            text="Connect & Scan",
             command=self._handle_connect
         )
         self._disconnect_btn = ttk.Button(

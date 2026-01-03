@@ -25,6 +25,10 @@ from .ftp.exceptions import (
 from .ftp.uploader import FileUploader, UploadProgress, UploadResult
 from .gui.main_window import MainWindow, AppCallbacks
 from .gui.upload_dialog import UploadDialog
+from .gui.download_dialog import DownloadDialog
+from .updater.downloader import ReleaseDownloader, DownloadProgress
+from .updater.github_client import GitHubConnectionError, GitHubError
+from .updater.release import DumpRunnerRelease
 from .utils.logging import setup_logging, get_logger
 from .utils.threading import ThreadedTask, GUIUpdateQueue
 
@@ -54,6 +58,12 @@ class Application(AppCallbacks):
         self._uploader: Optional[FileUploader] = None
         self._upload_dialog: Optional[UploadDialog] = None
         self._scan_in_progress: bool = False
+
+        # Initialize updater components
+        self._release_downloader = ReleaseDownloader()
+        self._current_release: Optional[DumpRunnerRelease] = None
+        self._download_dialog: Optional[DownloadDialog] = None
+        self._download_cancelled: bool = False
 
         # Initialize GUI
         self._root = tk.Tk()
@@ -91,6 +101,9 @@ class Application(AppCallbacks):
             self._root.geometry(
                 f"{self._settings.window_width}x{self._settings.window_height}"
             )
+
+        # Check for cached release
+        self._check_cached_release()
 
     def _save_connection_settings(
         self,
@@ -314,6 +327,179 @@ class Application(AppCallbacks):
         # Start the upload
         self._start_upload(selected_dumps, Path(elf_path), Path(js_path))
 
+    def on_download_release(self) -> None:
+        """Handle download latest release request from GUI."""
+        self._logger.info("Download latest release requested")
+
+        self._download_cancelled = False
+
+        # Create and show download dialog
+        self._download_dialog = DownloadDialog(
+            self._root,
+            title="Downloading Latest Release",
+            on_cancel=self._handle_download_cancel,
+            on_close=self._handle_download_dialog_closed
+        )
+
+        # Run download in background thread
+        def download_task():
+            try:
+                release = self._release_downloader.download_latest(
+                    progress_callback=self._on_download_progress
+                )
+                return release, None
+            except Exception as e:
+                return None, e
+
+        def on_download_complete(result):
+            release, error = result.result if result.result else (None, None)
+            self._root.after(0, lambda: self._handle_download_complete(release, error))
+
+        task = ThreadedTask(download_task, on_complete=on_download_complete)
+        task.start()
+
+    def _on_download_progress(self, progress: DownloadProgress) -> None:
+        """Handle download progress (called from background thread)."""
+        if self._download_cancelled:
+            return
+        self._root.after(0, lambda: self._update_download_progress(progress))
+
+    def _update_download_progress(self, progress: DownloadProgress) -> None:
+        """Update download progress in dialog (main thread)."""
+        if self._download_dialog:
+            self._download_dialog.update_progress(progress)
+
+    def _handle_download_cancel(self) -> None:
+        """Handle download cancel button."""
+        self._logger.info("Download cancelled by user")
+        self._download_cancelled = True
+
+    def _handle_download_dialog_closed(self) -> None:
+        """Handle download dialog being closed after completion."""
+        self._logger.info("Download dialog closed")
+
+        # Ensure button states are updated correctly after dialog closes
+        if self._current_release and self._current_release.files_valid:
+            self._window.set_official_release_available(True, self._current_release.version)
+            self._logger.info(
+                f"Refreshed official release availability: {self._current_release.version}"
+            )
+
+    def _handle_download_complete(
+        self,
+        release: Optional[DumpRunnerRelease],
+        error: Optional[Exception]
+    ) -> None:
+        """Handle download completion (main thread)."""
+        if not self._download_dialog:
+            return
+
+        if self._download_cancelled:
+            self._download_dialog.complete(success=False, message="Download cancelled")
+            return
+
+        if error:
+            self._logger.error(f"Download failed: {error}")
+
+            # User-friendly error messages
+            if isinstance(error, GitHubConnectionError):
+                message = (
+                    "Could not connect to GitHub.\n\n"
+                    "Please check your internet connection and try again."
+                )
+            elif isinstance(error, GitHubError):
+                message = f"GitHub error: {error}"
+            else:
+                message = f"Download failed: {error}"
+
+            self._download_dialog.complete(success=False, message=message)
+            self._window.update_status("Download failed")
+            return
+
+        if release:
+            self._current_release = release
+            self._logger.info(f"Downloaded release: {release.version}")
+            self._logger.info(f"Files: ELF={release.elf_path}, JS={release.js_path}")
+            self._logger.info(f"Files valid: {release.files_valid}")
+
+            self._download_dialog.complete(
+                success=True,
+                message=f"Downloaded {release.version}"
+            )
+
+            # Update UI to show release is available
+            self._window.set_official_release_available(True, release.version)
+            self._window.update_status(f"Downloaded release {release.version} - click 'Upload Official' to install")
+
+    def on_upload_official(self, selected_dumps: List[GameDump]) -> None:
+        """Handle upload official release request from GUI."""
+        self._logger.info(f"on_upload_official called with {len(selected_dumps)} dumps")
+
+        if not self._current_release:
+            self._logger.warning("No current release available")
+            self._window.show_error(
+                "No Release",
+                "No official release downloaded.\n\n"
+                "Please click 'Download Latest' first."
+            )
+            return
+
+        self._logger.info(f"Current release: {self._current_release.version}")
+        self._logger.info(f"ELF path: {self._current_release.elf_path}")
+        self._logger.info(f"JS path: {self._current_release.js_path}")
+        self._logger.info(f"Files valid: {self._current_release.files_valid}")
+
+        if not self._current_release.files_valid:
+            self._logger.error("Release files are not valid")
+            self._window.show_error(
+                "Invalid Release",
+                "The downloaded release files are missing or invalid.\n\n"
+                "Please download the release again."
+            )
+            return
+
+        self._logger.info(
+            f"Upload official release {self._current_release.version} "
+            f"to {len(selected_dumps)} dumps"
+        )
+
+        if not self._connection_manager.is_connected:
+            self._window.show_error("Error", "Not connected to FTP server.")
+            return
+
+        # Check if files already exist (overwrite confirmation)
+        dumps_with_existing = self._check_existing_files(selected_dumps)
+        if dumps_with_existing:
+            dump_names = "\n".join([d.display_name for d in dumps_with_existing[:5]])
+            if len(dumps_with_existing) > 5:
+                dump_names += f"\n... and {len(dumps_with_existing) - 5} more"
+
+            if not self._window.show_warning(
+                "Overwrite Confirmation",
+                f"The following dumps already have dump_runner files:\n\n"
+                f"{dump_names}\n\n"
+                f"Do you want to overwrite them?"
+            ):
+                return
+
+        # Start the upload with official release files
+        self._start_upload(
+            selected_dumps,
+            self._current_release.elf_path,
+            self._current_release.js_path
+        )
+
+    def _check_cached_release(self) -> None:
+        """Check for cached release on startup."""
+        try:
+            cached = self._release_downloader.get_cached_release()
+            if cached and cached.files_valid:
+                self._current_release = cached
+                self._logger.info(f"Found cached release: {cached.version}")
+                self._window.set_official_release_available(True, cached.version)
+        except Exception as e:
+            self._logger.warning(f"Failed to check cached release: {e}")
+
     def _select_file(self, title: str, filetypes: list) -> Optional[str]:
         """Open file dialog to select a file."""
         return filedialog.askopenfilename(
@@ -492,6 +678,8 @@ class Application(AppCallbacks):
         """Clean up resources."""
         if self._connection_manager.is_connected:
             self._connection_manager.disconnect()
+        if self._release_downloader:
+            self._release_downloader.close()
         self._logger.info("Application cleanup complete")
 
 
