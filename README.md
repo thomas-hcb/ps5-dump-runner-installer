@@ -25,7 +25,7 @@
 
 ## Installation
 
-Download the latest release from the [Releases](https://github.com/yourusername/ps5-dump-runner-installer/releases) page and run `PS5DumpRunnerInstaller.exe`.
+Download the latest release from the [Releases](https://github.com/thomas-hcb/ps5-dump-runner-installer/releases) page and run `PS5DumpRunnerInstaller-vX.X.X.exe`.
 
 ---
 
