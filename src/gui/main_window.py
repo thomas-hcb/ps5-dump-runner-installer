@@ -132,7 +132,7 @@ class MainWindow:
         )
         self._upload_custom_btn = ttk.Button(
             self._button_panel,
-            text="Upload Custom...",
+            text="Upload Custom Files...",
             command=self._handle_upload,
             state=tk.DISABLED
         )

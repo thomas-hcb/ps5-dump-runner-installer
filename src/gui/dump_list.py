@@ -162,6 +162,9 @@ class DumpList(ttk.Frame):
         # Update count
         self._count_label.config(text=f"{len(dumps)} dumps found")
 
+        # Notify that selection was cleared
+        self._notify_selection_changed()
+
         # Configure tag colors
         self._tree.tag_configure("internal", foreground="#1e40af")
         self._tree.tag_configure("usb", foreground="#047857")
@@ -249,6 +252,9 @@ class DumpList(ttk.Frame):
         self._selected_paths.clear()
         self._check_vars.clear()
         self._count_label.config(text="0 dumps found")
+
+        # Notify that selection was cleared
+        self._notify_selection_changed()
 
     def set_refresh_callback(self, callback: Callable[[], None]) -> None:
         """Set the callback for refresh button."""
