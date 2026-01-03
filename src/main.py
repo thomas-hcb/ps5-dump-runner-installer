@@ -643,6 +643,7 @@ class Application(AppCallbacks):
                 )
 
         # Refresh dump list to show updated installation status
+        self._window.update_status("Rescanning to update installation status...")
         self.on_scan()
 
     def run(self) -> None:
