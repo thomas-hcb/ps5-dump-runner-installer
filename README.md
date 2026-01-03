@@ -1,15 +1,21 @@
 # PS5 Dump Runner Installer
 
-A GUI application for installing dump_runner files to PS5 game dumps via FTP.
+> **Tired of manually uploading every update of `dump_runner.elf` and `homebrew.js` from EchoStretch to each of your game dumps located in internal, external M.2, and USB storages?**
+>
+> This tool automates everything for you! With just a few clicks, you can download the latest releases and deploy them to all your game dumps at once.
 
-## Features
+## Why Use This Tool?
 
-- **FTP Connection**: Connect to your PS5's FTP server to scan for game dumps
-- **Auto-Scan**: Automatically scans internal storage, USB devices, and extended storage for homebrew dumps
-- **GitHub Integration**: Download official dump_runner releases directly from EchoStretch's GitHub repository
-- **Batch Upload**: Upload dump_runner files to multiple game dumps at once
-- **Custom Files**: Option to upload your own experimental dump_runner files
-- **Progress Tracking**: Visual progress indicators for downloads and uploads
+- **Save Time** - No more navigating through FTP folders manually for each game
+- **Stay Updated** - Download the latest releases directly from [EchoStretch GitHub](https://github.com/EchoStretch/ps5-payload-dev/releases) with one click
+- **Batch Operations** - Upload to 10, 20, or even 50 game dumps simultaneously
+- **Never Miss a Game** - Auto-scan finds all your dumps located in internal storage, external M.2, and USB drives
+- **Track Progress** - Visual progress bars show exactly what's happening
+- **Safe & Reliable** - Confirmation prompts before overwriting, detailed error reporting
+- **Custom Files** - Option to upload your own experimental dump_runner files
+- **Remember Settings** - Your connection settings and credentials are saved securely between sessions
+
+---
 
 ## Requirements
 
@@ -37,36 +43,102 @@ python -m src.main
 
 Download the latest release from the Releases page and run `PS5DumpRunnerInstaller.exe`.
 
-## Usage
+---
 
-### 1. Connect to PS5
+## Usage Guide
 
-1. Start an FTP server on your PS5
-2. Enter your PS5's IP address in the **Host** field
-3. Default port is `1337` (adjust if needed)
-4. Default username is `anonymous` (adjust if needed)
-5. Click **Connect & Scan** to connect and scan for game dumps
+### Step 1: Start FTP Server on PS5
 
-### 2. Download dump_runner Files
+Before using this tool, you need to have an FTP server running on your PS5.
 
-Click **Download from GitHub** to download the latest official dump_runner release from EchoStretch's repository.
+---
 
-Downloaded files are cached locally at:
-- **Windows**: `%APPDATA%\PS5DumpRunnerInstaller\cache\releases\`
-- **Linux**: `~/.config/PS5DumpRunnerInstaller/cache/releases/`
-- **macOS**: `~/Library/Application Support/PS5DumpRunnerInstaller/cache/releases/`
+### Step 2: Connect to Your PS5
 
-### 3. Select Game Dumps
+1. Enter your PS5's IP address in the **Host** field
+2. Default port is `1337` (adjust if your FTP server uses a different port)
+3. Default username is `anonymous` (adjust if needed)
+4. Enter password if required
+5. Click **Connect & Scan**
 
-After scanning, select the game dumps you want to install dump_runner to:
+![Step 2: Connect](docs/step2-connect.jpg)
+
+---
+
+### Step 3: View Discovered Game Dumps
+
+After connecting, the application will automatically scan and display all game dumps found on your PS5.
+
+- Each dump shows its **Title ID** (e.g., CUSA12345)
+- Location indicator shows where the dump is stored (Internal, USB, Extended)
+- Status shows: "Installed", "Partial", or "Not Installed"
+
+![Step 3: Game Dumps](docs/step3-game-dumps.jpg)
+
+---
+
+### Step 4: Download Latest dump_runner from GitHub
+
+Click **Download from GitHub** to fetch the latest official release from EchoStretch's repository.
+
+- A dialog shows available releases with version info
+- Select the version you want to download
+- Progress bar shows download status
+
+![Step 4: Download](docs/step4-download.jpg)
+
+---
+
+### Step 5: Select Game Dumps to Update
+
+Select which game dumps you want to install dump_runner files to:
+
 - Click checkboxes next to individual dumps
-- Use **Select All** / **Select None** buttons for batch selection
-- Dumps show their current status: "Installed", "Partial", or "Not Installed"
+- Use **Select All** to select everything
+- Use **Select None** to clear selection
+- The selection counter shows how many dumps are selected
 
-### 4. Upload Files
+![Step 5: Select Dumps](docs/step5-select-dumps.jpg)
 
-- **Upload Downloaded Files**: Upload the official dump_runner files to selected dumps
-- **Upload Custom...**: Browse and upload your own experimental files
+---
+
+### Step 6: Upload Files to Selected Dumps
+
+Click **Upload Downloaded Files** to begin uploading to all selected game dumps.
+
+- Progress bar shows overall upload progress
+- Each dump is updated one by one
+- Status updates in real-time
+- After upload completes, dumps are automatically rescanned to show updated status
+
+![Step 6: Upload](docs/step6-upload.jpg)
+
+---
+
+### Step 7: Upload Custom/Experimental Files (Optional)
+
+If you have custom or experimental dump_runner files, click **Upload Custom Files...** to browse and upload your own files.
+
+- Select your custom `dump_runner.elf` and/or `homebrew.js` files
+- A warning reminds you these are not official releases
+- Files are uploaded to all selected game dumps
+
+![Step 7: Custom Files](docs/step7-custom-files.jpg)
+
+---
+
+### Step 8: Manage Settings
+
+Access **File > Settings** to configure:
+
+- FTP connection timeout
+- Passive mode toggle
+- Auto-update check setting
+- Clear saved credentials
+
+![Step 8: Settings](docs/step8-settings.jpg)
+
+---
 
 ## Scan Locations
 
@@ -83,6 +155,15 @@ The application scans these PS5 FTP paths for game dumps:
 For each game dump, the following files are uploaded:
 - `dump_runner.elf` - The main executable
 - `homebrew.js` - JavaScript configuration file
+
+## File Cache Location
+
+Downloaded files are cached locally at:
+- **Windows**: `%APPDATA%\PS5DumpRunnerInstaller\cache\releases\`
+- **Linux**: `~/.config/PS5DumpRunnerInstaller/cache/releases/`
+- **macOS**: `~/Library/Application Support/PS5DumpRunnerInstaller/cache/releases/`
+
+---
 
 ## Troubleshooting
 
@@ -101,6 +182,8 @@ For each game dump, the following files are uploaded:
 - Check available space on the target storage
 - Ensure you have write permissions
 
+---
+
 ## Development
 
 ### Running Tests
@@ -118,6 +201,8 @@ pytest --cov=src --cov-report=html
 ```bash
 pyinstaller --onefile --windowed --name "PS5DumpRunnerInstaller" src/main.py
 ```
+
+---
 
 ## Credits
 
