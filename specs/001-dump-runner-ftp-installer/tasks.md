@@ -93,22 +93,22 @@
 
 ### Tests for User Story 1
 
-- [ ] T032 [P] [US1] Unit test for FTPConnectionManager in tests/unit/test_connection.py (connect, disconnect, state transitions)
-- [ ] T033 [P] [US1] Unit test for DumpScanner in tests/unit/test_scanner.py (scan paths, parse directories)
-- [ ] T034 [P] [US1] Integration test with mock FTP server in tests/integration/test_ftp_workflow.py
-- [ ] T035 [P] [US1] Create mock FTP server helper in tests/integration/mock_ftp_server.py using pyftpdlib
+- [x] T032 [P] [US1] Unit test for FTPConnectionManager in tests/unit/test_connection.py (connect, disconnect, state transitions)
+- [x] T033 [P] [US1] Unit test for DumpScanner in tests/unit/test_scanner.py (scan paths, parse directories)
+- [x] T034 [P] [US1] Integration test with mock FTP server in tests/integration/test_ftp_workflow.py
+- [x] T035 [P] [US1] Create mock FTP server helper in tests/integration/mock_ftp_server.py using pyftpdlib
 
 ### Implementation for User Story 1
 
-- [ ] T036 [US1] Implement FTPConnectionManager class in src/ftp/connection.py (connect, disconnect, state property, is_connected property)
-- [ ] T037 [US1] Implement DumpScanner class in src/ftp/scanner.py (scan method iterating SCAN_PATHS, refresh method)
-- [ ] T038 [P] [US1] Create StatusIndicator widget in src/gui/widgets/status_indicator.py (connected/disconnected icons)
-- [ ] T039 [P] [US1] Create ConnectionPanel widget in src/gui/connection_panel.py (IP, port, username, password fields, connect button)
-- [ ] T040 [US1] Create DumpList widget in src/gui/dump_list.py (TreeView/Listbox with checkboxes, select all)
-- [ ] T041 [US1] Create MainWindow class in src/gui/main_window.py (layout with connection panel, dump list, status bar)
-- [ ] T042 [US1] Create application controller in src/main.py (wire GUI callbacks to FTP module)
-- [ ] T043 [US1] Add connection error handling with user-friendly messages
-- [ ] T044 [US1] Add logging for connection and scan operations
+- [x] T036 [US1] Implement FTPConnectionManager class in src/ftp/connection.py (connect, disconnect, state property, is_connected property)
+- [x] T037 [US1] Implement DumpScanner class in src/ftp/scanner.py (scan method iterating SCAN_PATHS, refresh method)
+- [x] T038 [P] [US1] Create StatusIndicator widget in src/gui/widgets/status_indicator.py (connected/disconnected icons)
+- [x] T039 [P] [US1] Create ConnectionPanel widget in src/gui/connection_panel.py (IP, port, username, password fields, connect button)
+- [x] T040 [US1] Create DumpList widget in src/gui/dump_list.py (TreeView/Listbox with checkboxes, select all)
+- [x] T041 [US1] Create MainWindow class in src/gui/main_window.py (layout with connection panel, dump list, status bar)
+- [x] T042 [US1] Create application controller in src/main.py (wire GUI callbacks to FTP module)
+- [x] T043 [US1] Add connection error handling with user-friendly messages
+- [x] T044 [US1] Add logging for connection and scan operations
 
 **Checkpoint**: User Story 1 complete - can connect to PS5 and see discovered game dumps
 
