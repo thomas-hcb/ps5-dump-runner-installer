@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Callable, Optional
 
-from ..config.settings import AppSettings
+from src.config.settings import AppSettings
 
 
 class SettingsDialog(tk.Toplevel):

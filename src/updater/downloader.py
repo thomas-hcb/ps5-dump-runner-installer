@@ -13,14 +13,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 
-from ..config.paths import get_releases_cache_dir
-from .github_client import (
+from src.config.paths import get_releases_cache_dir
+from src.updater.github_client import (
     GitHubClient,
     GitHubRelease,
     GitHubConnectionError,
     GitHubError,
 )
-from .release import DumpRunnerRelease, ReleaseSource
+from src.updater.release import DumpRunnerRelease, ReleaseSource
 
 logger = logging.getLogger("ps5_dump_runner.downloader")
 

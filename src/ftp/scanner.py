@@ -10,9 +10,9 @@ from enum import Enum
 from ftplib import error_perm
 from typing import List, Optional
 
-from ..config.paths import SCAN_PATHS, get_location_type_from_path
-from .connection import FTPConnectionManager
-from .exceptions import FTPNotConnectedError
+from src.config.paths import SCAN_PATHS, get_location_type_from_path
+from src.ftp.connection import FTPConnectionManager
+from src.ftp.exceptions import FTPNotConnectedError
 
 logger = logging.getLogger("ps5_dump_runner.scanner")
 

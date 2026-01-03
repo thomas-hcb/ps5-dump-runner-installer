@@ -115,11 +115,20 @@ For integration tests without a real PS5:
 # tests/integration/mock_ftp_server.py provides a pyftpdlib-based mock
 
 from tests.integration.mock_ftp_server import MockPS5FTPServer
+from src.ftp.connection import FTPConnectionManager, FTPConnectionConfig
 
 def test_with_mock():
     with MockPS5FTPServer(port=2121) as server:
-        # Your test code - connects to localhost:2121
-        pass
+        # Default credentials: username='testuser', password='testpass'
+        config = FTPConnectionConfig(
+            host='127.0.0.1',
+            port=2121,
+            username='testuser'
+        )
+        mgr = FTPConnectionManager()
+        mgr.connect(config, password='testpass')
+        # Your test code...
+        mgr.disconnect()
 ```
 
 ## Building Executable

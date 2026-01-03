@@ -7,9 +7,9 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable, List, Optional
 
-from .widgets.progress_bar import ProgressBar
-from ..ftp.scanner import GameDump
-from ..ftp.uploader import UploadProgress, UploadResult
+from src.gui.widgets.progress_bar import ProgressBar
+from src.ftp.scanner import GameDump
+from src.ftp.uploader import UploadProgress, UploadResult
 
 
 class UploadDialog(tk.Toplevel):

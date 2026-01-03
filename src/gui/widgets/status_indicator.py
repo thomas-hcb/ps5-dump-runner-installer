@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Optional
 
-from ...ftp.connection import ConnectionState
+from src.ftp.connection import ConnectionState
 
 
 class StatusIndicator(ttk.Frame):

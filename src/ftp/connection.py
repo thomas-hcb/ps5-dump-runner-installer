@@ -11,7 +11,7 @@ from ftplib import FTP, error_perm, error_temp
 from typing import Optional
 import socket
 
-from .exceptions import (
+from src.ftp.exceptions import (
     FTPConnectionError,
     FTPAuthenticationError,
     FTPNotConnectedError,

@@ -5,7 +5,7 @@ This module contains reusable tkinter widgets:
 - StatusIndicator: Connection status indicator (connected/disconnected)
 """
 
-from .progress_bar import ProgressBar
-from .status_indicator import StatusIndicator
+from src.gui.widgets.progress_bar import ProgressBar
+from src.gui.widgets.status_indicator import StatusIndicator
 
 __all__ = ["ProgressBar", "StatusIndicator"]

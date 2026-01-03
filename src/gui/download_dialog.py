@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Optional
 
-from ..updater.downloader import DownloadProgress
+from src.updater.downloader import DownloadProgress
 
 
 class DownloadDialog(tk.Toplevel):

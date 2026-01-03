@@ -187,16 +187,18 @@
 
 **Purpose**: Final improvements affecting multiple user stories
 
-- [ ] T063 [P] Add application icon to resources/icons/app_icon.ico
-- [ ] T064 [P] Add connected/disconnected status icons to resources/icons/
-- [ ] T065 [P] Add official/experimental version icons to resources/icons/
-- [ ] T066 Create PyInstaller spec file in build/ps5-dump-runner-installer.spec
-- [ ] T067 Build Windows executable with PyInstaller
-- [ ] T068 [P] Update README.md with usage instructions
-- [ ] T069 Run full test suite and ensure all tests pass
-- [ ] T070 Test quickstart.md workflow end-to-end
-- [ ] T071 Code cleanup: remove debug prints, ensure consistent error messages
-- [ ] T072 Security review: verify no credentials logged, keyring integration correct
+- [x] T063 [P] Add application icon to resources/icons/app_icon.ico
+- [x] T064 [P] Add connected/disconnected status icons to resources/icons/
+- [x] T065 [P] Add official/experimental version icons to resources/icons/
+- [x] T066 Create PyInstaller spec file in build/ps5-dump-runner-installer.spec
+- [x] T067 Build Windows executable with PyInstaller
+- [x] T068 [P] Update README.md with usage instructions
+- [x] T069 Run full test suite and ensure all tests pass
+- [x] T070 Test quickstart.md workflow end-to-end
+- [x] T071 Code cleanup: remove debug prints, ensure consistent error messages
+- [x] T072 Security review: verify no credentials logged, keyring integration correct
+
+**Checkpoint**: Phase 6 complete - Application polished and production-ready
 
 ---
 
@@ -303,8 +305,8 @@ Task: "Create ConnectionPanel widget in src/gui/connection_panel.py"
 | Phase 3: US1 (Connect + Scan) | 13 | P1 | ✅ Complete |
 | Phase 4: US2+US3 (Upload + Custom Files + GitHub) | 21 | P1+P2 | ✅ Complete |
 | Phase 5: US5 (Settings) | 8 | P3 | ✅ Complete |
-| Phase 6: Polish | 10 | - | ⏳ Pending |
-| **Total** | **83** | | |
+| Phase 6: Polish | 10 | - | ✅ Complete |
+| **Total** | **83** | | ✅ ALL COMPLETE |
 
 ---
 

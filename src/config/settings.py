@@ -8,7 +8,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Optional
 
-from .paths import get_settings_path
+from src.config.paths import get_settings_path
 
 
 @dataclass

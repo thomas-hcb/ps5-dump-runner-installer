@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Callable, List, Optional
 import threading
 
-from .connection import FTPConnectionManager
-from .scanner import GameDump
-from .exceptions import FTPNotConnectedError, FTPUploadError
+from src.ftp.connection import FTPConnectionManager
+from src.ftp.scanner import GameDump
+from src.ftp.exceptions import FTPNotConnectedError, FTPUploadError
 
 
 @dataclass

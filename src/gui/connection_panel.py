@@ -8,8 +8,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Optional
 
-from .widgets.status_indicator import StatusIndicator
-from ..ftp.connection import ConnectionState
+from src.gui.widgets.status_indicator import StatusIndicator
+from src.ftp.connection import ConnectionState
 
 
 class ConnectionPanel(ttk.LabelFrame):

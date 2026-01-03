@@ -199,8 +199,14 @@ pytest --cov=src --cov-report=html
 ### Building Executable
 
 ```bash
-pyinstaller --onefile --windowed --name "PS5DumpRunnerInstaller" src/main.py
+# Using the spec file (recommended)
+pyinstaller build/ps5-dump-runner-installer.spec
+
+# Or manually
+pyinstaller --onefile --windowed --name "PS5DumpRunnerInstaller" --icon resources/icons/app_icon.ico src/main.py
 ```
+
+The built executable will be in `build/dist/PS5DumpRunnerInstaller.exe`.
 
 ---
 

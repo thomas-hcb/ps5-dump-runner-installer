@@ -7,12 +7,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Callable, List, Optional, Protocol
 
-from .connection_panel import ConnectionPanel
-from .dump_list import DumpList
-from .upload_dialog import UploadDialog
-from ..ftp.scanner import GameDump
-from ..ftp.connection import ConnectionState
-from ..ftp.uploader import UploadProgress, UploadResult
+from src.gui.connection_panel import ConnectionPanel
+from src.gui.dump_list import DumpList
+from src.gui.upload_dialog import UploadDialog
+from src.ftp.scanner import GameDump
+from src.ftp.connection import ConnectionState
+from src.ftp.uploader import UploadProgress, UploadResult
 
 
 class AppCallbacks(Protocol):

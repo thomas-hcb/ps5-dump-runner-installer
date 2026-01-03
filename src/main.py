@@ -9,12 +9,12 @@ from pathlib import Path
 from tkinter import filedialog
 from typing import List, Optional
 
-from .config.paths import get_log_file_path
-from .config.settings import AppSettings, SettingsManager
-from .config.credentials import CredentialManager
-from .ftp.connection import FTPConnectionConfig, FTPConnectionManager, ConnectionState
-from .ftp.scanner import DumpScanner, GameDump
-from .ftp.exceptions import (
+from src.config.paths import get_log_file_path
+from src.config.settings import AppSettings, SettingsManager
+from src.config.credentials import CredentialManager
+from src.ftp.connection import FTPConnectionConfig, FTPConnectionManager, ConnectionState
+from src.ftp.scanner import DumpScanner, GameDump
+from src.ftp.exceptions import (
     FTPError,
     FTPConnectionError,
     FTPAuthenticationError,
@@ -22,16 +22,16 @@ from .ftp.exceptions import (
     FTPNotConnectedError,
     FTPUploadError,
 )
-from .ftp.uploader import FileUploader, UploadProgress, UploadResult
-from .gui.main_window import MainWindow, AppCallbacks
-from .gui.upload_dialog import UploadDialog
-from .gui.download_dialog import DownloadDialog
-from .gui.settings_dialog import SettingsDialog
-from .updater.downloader import ReleaseDownloader, DownloadProgress
-from .updater.github_client import GitHubConnectionError, GitHubError
-from .updater.release import DumpRunnerRelease
-from .utils.logging import setup_logging, get_logger
-from .utils.threading import ThreadedTask, GUIUpdateQueue
+from src.ftp.uploader import FileUploader, UploadProgress, UploadResult
+from src.gui.main_window import MainWindow, AppCallbacks
+from src.gui.upload_dialog import UploadDialog
+from src.gui.download_dialog import DownloadDialog
+from src.gui.settings_dialog import SettingsDialog
+from src.updater.downloader import ReleaseDownloader, DownloadProgress
+from src.updater.github_client import GitHubConnectionError, GitHubError
+from src.updater.release import DumpRunnerRelease
+from src.utils.logging import setup_logging, get_logger
+from src.utils.threading import ThreadedTask, GUIUpdateQueue
 
 
 class Application(AppCallbacks):
@@ -549,7 +549,7 @@ class Application(AppCallbacks):
 
     def _check_existing_files(self, dumps: List[GameDump]) -> List[GameDump]:
         """Check which dumps already have dump_runner files installed."""
-        from .ftp.scanner import InstallationStatus
+        from src.ftp.scanner import InstallationStatus
         # Check for any installed status (OFFICIAL, EXPERIMENTAL, or UNKNOWN with files present)
         return [d for d in dumps if d.installation_status != InstallationStatus.NOT_INSTALLED]
 

@@ -6,8 +6,8 @@ This module handles dump_runner release management:
 - Release models: DumpRunnerRelease, ReleaseAsset dataclasses
 """
 
-from .release import DumpRunnerRelease, ReleaseSource
-from .github_client import (
+from src.updater.release import DumpRunnerRelease, ReleaseSource
+from src.updater.github_client import (
     GitHubClient,
     GitHubRelease,
     ReleaseAsset,
@@ -16,7 +16,7 @@ from .github_client import (
     GitHubRateLimitError,
     GitHubNotFoundError,
 )
-from .downloader import (
+from src.updater.downloader import (
     ReleaseDownloader,
     DownloadProgress,
     ProgressCallback,
