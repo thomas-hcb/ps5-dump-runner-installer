@@ -1,0 +1,2 @@
+This directory simulates a game dump directory on PS5.
+Used for testing the DumpScanner and FileUploader.
