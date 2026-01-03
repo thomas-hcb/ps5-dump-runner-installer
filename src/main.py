@@ -429,7 +429,7 @@ class Application(AppCallbacks):
 
             # Update UI to show release is available
             self._window.set_official_release_available(True, release.version)
-            self._window.update_status(f"Downloaded release {release.version} - click 'Upload Official' to install")
+            self._window.update_status(f"Downloaded release {release.version} - click 'Upload Downloaded Files' to install")
 
     def on_upload_official(self, selected_dumps: List[GameDump]) -> None:
         """Handle upload official release request from GUI."""

@@ -126,7 +126,7 @@ class MainWindow:
 
         self._upload_official_btn = ttk.Button(
             self._button_panel,
-            text="Upload Official",
+            text="Upload Downloaded Files",
             command=self._handle_upload_official,
             state=tk.DISABLED
         )
