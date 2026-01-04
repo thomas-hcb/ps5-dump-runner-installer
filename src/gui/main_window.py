@@ -3,9 +3,11 @@
 Provides the primary UI with connection panel, dump list, and status bar.
 """
 
+import logging
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Callable, List, Optional, Protocol
+from pathlib import Path
 
 from src.gui.connection_panel import ConnectionPanel
 from src.gui.dump_list import DumpList
@@ -13,6 +15,10 @@ from src.gui.upload_dialog import UploadDialog
 from src.ftp.scanner import GameDump
 from src.ftp.connection import ConnectionState
 from src.ftp.uploader import UploadProgress, UploadResult
+from src.core.scanner_base import ScanMode
+from src.local import get_available_volumes
+
+logger = logging.getLogger("ps5_dump_runner.main_window")
 
 
 class AppCallbacks(Protocol):
@@ -44,6 +50,18 @@ class AppCallbacks(Protocol):
 
     def on_show_settings(self) -> None:
         """Called when user opens settings dialog."""
+        ...
+
+    def on_scan_local(self, volume_path: Path) -> None:
+        """Called when user requests local volume scan."""
+        ...
+
+    def on_upload_local(self, selected_dumps: List[GameDump]) -> None:
+        """Called when user wants to upload to local dumps."""
+        ...
+
+    def on_upload_official_local(self, selected_dumps: List[GameDump]) -> None:
+        """Called when user wants to upload official release to local dumps."""
         ...
 
     def on_clear_credentials(self) -> None:
@@ -120,11 +138,45 @@ class MainWindow:
 
     def _create_widgets(self) -> None:
         """Create all child widgets."""
-        # Connection panel
+        # Mode selector frame
+        self._mode_frame = ttk.LabelFrame(self._root, text="Mode")
+        self._scan_mode = tk.StringVar(value=ScanMode.FTP.value)
+        self._ftp_radio = ttk.Radiobutton(
+            self._mode_frame,
+            text="FTP Connection",
+            variable=self._scan_mode,
+            value=ScanMode.FTP.value,
+            command=self._on_mode_change
+        )
+        self._local_radio = ttk.Radiobutton(
+            self._mode_frame,
+            text="Local Drive",
+            variable=self._scan_mode,
+            value=ScanMode.LOCAL.value,
+            command=self._on_mode_change
+        )
+
+        # Connection panel (for FTP mode)
         self._connection_panel = ConnectionPanel(
             self._root,
             on_connect=self._handle_connect,
             on_disconnect=self._handle_disconnect
+        )
+
+        # Volume selector frame (for Local mode)
+        self._volume_frame = ttk.LabelFrame(self._root, text="Volume Selection")
+        self._volume_label = ttk.Label(self._volume_frame, text="Select Drive:")
+        self._volume_var = tk.StringVar()
+        self._volume_combo = ttk.Combobox(
+            self._volume_frame,
+            textvariable=self._volume_var,
+            state="readonly",
+            width=40
+        )
+        self._refresh_volumes_btn = ttk.Button(
+            self._volume_frame,
+            text="Refresh",
+            command=self._refresh_volumes
         )
 
         # Main content frame
@@ -183,8 +235,19 @@ class MainWindow:
 
     def _layout_widgets(self) -> None:
         """Arrange widgets in the window."""
-        # Connection panel at top
+        # Mode selector at top
+        self._mode_frame.pack(fill=tk.X, padx=10, pady=5)
+        self._ftp_radio.pack(side=tk.LEFT, padx=10, pady=5)
+        self._local_radio.pack(side=tk.LEFT, padx=10, pady=5)
+
+        # Connection panel (initially visible for FTP mode)
         self._connection_panel.pack(fill=tk.X, padx=10, pady=5)
+
+        # Volume selector frame (initially hidden)
+        # Layout widgets inside volume frame
+        self._volume_label.pack(side=tk.LEFT, padx=5, pady=5)
+        self._volume_combo.pack(side=tk.LEFT, padx=5, pady=5)
+        self._refresh_volumes_btn.pack(side=tk.LEFT, padx=5, pady=5)
 
         # Main content in middle (expandable)
         self._content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -208,6 +271,57 @@ class MainWindow:
         # Set refresh callback
         self._dump_list.set_refresh_callback(self._handle_scan)
 
+        # Initialize volumes
+        self._refresh_volumes()
+
+    def _on_mode_change(self) -> None:
+        """Handle mode change between FTP and Local Drive."""
+        mode = ScanMode(self._scan_mode.get())
+
+        if mode == ScanMode.FTP:
+            # Show connection panel, hide volume selector
+            self._volume_frame.pack_forget()
+            self._connection_panel.pack(fill=tk.X, padx=10, pady=5, after=self._mode_frame)
+
+            # Update scan button state based on connection
+            # (handled by set_connection_state)
+            self.update_status("Switched to FTP mode")
+        else:  # LOCAL
+            # Hide connection panel, show volume selector
+            self._connection_panel.pack_forget()
+            self._volume_frame.pack(fill=tk.X, padx=10, pady=5, after=self._mode_frame)
+
+            # Enable scan button in local mode if volume is selected
+            if self._volume_var.get():
+                self._scan_btn.config(state=tk.NORMAL)
+            else:
+                self._scan_btn.config(state=tk.DISABLED)
+
+            self.update_status("Switched to Local Drive mode")
+
+    def _refresh_volumes(self) -> None:
+        """Refresh available volumes list."""
+        try:
+            volumes = get_available_volumes()
+            volume_strings = [str(v) for v in volumes]
+            self._volume_combo['values'] = volume_strings
+
+            # Select first volume if available
+            if volume_strings:
+                self._volume_combo.current(0)
+                # Enable scan button if in local mode
+                if ScanMode(self._scan_mode.get()) == ScanMode.LOCAL:
+                    self._scan_btn.config(state=tk.NORMAL)
+            else:
+                self._volume_var.set("")
+                if ScanMode(self._scan_mode.get()) == ScanMode.LOCAL:
+                    self._scan_btn.config(state=tk.DISABLED)
+
+            logger.debug(f"Found {len(volumes)} volumes: {volume_strings}")
+        except Exception as e:
+            logger.error(f"Error refreshing volumes: {e}")
+            self.show_error("Volume Error", f"Failed to detect volumes:\n{e}")
+
     def _handle_connect(self, host: str, port: int, username: str, password: str) -> None:
         """Handle Connect button click."""
         if self._callbacks:
@@ -220,8 +334,22 @@ class MainWindow:
 
     def _handle_scan(self) -> None:
         """Handle Scan button click."""
-        if self._callbacks:
+        if not self._callbacks:
+            return
+
+        mode = ScanMode(self._scan_mode.get())
+        if mode == ScanMode.FTP:
             self._callbacks.on_scan()
+        else:  # LOCAL
+            volume_str = self._volume_var.get()
+            if not volume_str:
+                messagebox.showwarning(
+                    "No Volume Selected",
+                    "Please select a volume to scan."
+                )
+                return
+            volume_path = Path(volume_str)
+            self._callbacks.on_scan_local(volume_path)
 
     def _handle_upload(self) -> None:
         """Handle Upload Custom button click."""
@@ -233,8 +361,14 @@ class MainWindow:
             )
             return
 
-        if self._callbacks:
+        if not self._callbacks:
+            return
+
+        mode = ScanMode(self._scan_mode.get())
+        if mode == ScanMode.FTP:
             self._callbacks.on_upload(selected)
+        else:  # LOCAL
+            self._callbacks.on_upload_local(selected)
 
     def _handle_upload_official(self) -> None:
         """Handle Upload Official button click."""
@@ -246,8 +380,14 @@ class MainWindow:
             )
             return
 
-        if self._callbacks:
+        if not self._callbacks:
+            return
+
+        mode = ScanMode(self._scan_mode.get())
+        if mode == ScanMode.FTP:
             self._callbacks.on_upload_official(selected)
+        else:  # LOCAL
+            self._callbacks.on_upload_official_local(selected)
 
     def _handle_download_release(self) -> None:
         """Handle Download Latest Release button/menu click."""
@@ -403,6 +543,25 @@ class MainWindow:
                 self._upload_official_btn.config(state=tk.NORMAL)
         else:
             self._upload_official_btn.config(state=tk.DISABLED)
+
+    def get_scan_mode(self) -> ScanMode:
+        """
+        Get the current scan mode.
+
+        Returns:
+            Current scan mode (FTP or LOCAL)
+        """
+        return ScanMode(self._scan_mode.get())
+
+    def get_selected_volume(self) -> Optional[Path]:
+        """
+        Get the currently selected volume path.
+
+        Returns:
+            Path to selected volume, or None if no volume selected
+        """
+        volume_str = self._volume_var.get()
+        return Path(volume_str) if volume_str else None
 
     def run(self) -> None:
         """Start the main event loop."""
