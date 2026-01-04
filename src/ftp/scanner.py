@@ -205,8 +205,17 @@ class DumpScanner:
         for attempt in range(retries + 1):
             try:
                 return ftp.nlst(path)
-            except error_perm:
-                # Permission error, don't retry
+            except error_perm as e:
+                # Permission error
+                # Check for 502 (Command not implemented) which PS5 returns for NLST on some paths
+                if str(e).startswith("502"):
+                    try:
+                        return self._list_names_fallback(ftp, path)
+                    except Exception as fallback_error:
+                        # Fallback failed, raise original error or new one
+                        logger.debug(f"Fallback LIST failed: {fallback_error}")
+                        raise e
+                # Actual permission error, don't retry
                 raise
             except Exception as e:
                 last_error = e
@@ -222,6 +231,34 @@ class DumpScanner:
 
         # All retries failed
         raise last_error
+
+    def _list_names_fallback(self, ftp, path: str) -> list:
+        """
+        Fallback implementation using LIST command when NLST fails.
+        
+        Args:
+            ftp: FTP connection object
+            path: Directory path to list
+            
+        Returns:
+            List of file/directory names
+        """
+        lines = []
+        # Use retrlines to capture LIST output
+        # If path is a directory, LIST <path> works.
+        ftp.retrlines(f"LIST {path}", lines.append)
+        
+        names = []
+        for line in lines:
+            # Unix style listing: drwxrwxrwx 1 user group size date time name
+            # Split by whitespace, maxsplit=8 to preserve spaces in filename
+            parts = line.split(None, 8)
+            if len(parts) >= 9:
+                name = parts[8].strip()
+                # Filter out . and ..
+                if name not in (".", ".."):
+                    names.append(name)
+        return names
 
     def _check_installation_status(self, dump: GameDump) -> None:
         """
