@@ -4,7 +4,6 @@ Scans local/portable drives for PS5 game dumps without requiring FTP connection.
 """
 
 import logging
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -15,9 +14,6 @@ logger = logging.getLogger("ps5_dump_runner.local_scanner")
 
 # Predefined subpaths to scan on selected volume
 PREDEFINED_PATHS = ["homebrew", "etaHEN/games"]
-
-# Pattern for PS5 game dump directories (CUSAXXXXX format)
-DUMP_FOLDER_PATTERN = re.compile(r"^CUSA\d{5}$", re.IGNORECASE)
 
 
 class LocalScanner:
@@ -90,6 +86,9 @@ class LocalScanner:
         """
         Check if a folder is a valid game dump directory.
 
+        Any folder with an eboot.bin file is considered a valid dump.
+        Users can name their folders however they want.
+
         Args:
             folder_path: Path to potential game dump folder
 
@@ -98,14 +97,10 @@ class LocalScanner:
         """
         folder_name = folder_path.name
 
-        # Check if folder matches CUSAXXXXX pattern
-        if not DUMP_FOLDER_PATTERN.match(folder_name):
-            return None
-
-        # Check for sfo file (required for valid dump)
-        sfo_file = folder_path / "param.sfo"
-        if not sfo_file.exists():
-            logger.debug(f"No param.sfo found in {folder_name}, skipping")
+        # Check for eboot.bin file (indicates a game dump)
+        eboot_file = folder_path / "eboot.bin"
+        if not eboot_file.exists():
+            logger.debug(f"No eboot.bin found in {folder_name}, skipping")
             return None
 
         # Create GameDump with LOCAL location type

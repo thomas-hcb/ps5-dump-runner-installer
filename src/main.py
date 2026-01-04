@@ -32,6 +32,8 @@ from src.updater.github_client import GitHubConnectionError, GitHubError
 from src.updater.release import DumpRunnerRelease
 from src.utils.logging import setup_logging, get_logger
 from src.utils.threading import ThreadedTask, GUIUpdateQueue
+from src.local.scanner import LocalScanner
+from src.local.uploader import LocalUploader
 
 
 class Application(AppCallbacks):
@@ -59,6 +61,10 @@ class Application(AppCallbacks):
         self._uploader: Optional[FileUploader] = None
         self._upload_dialog: Optional[UploadDialog] = None
         self._scan_in_progress: bool = False
+
+        # Initialize Local mode components
+        self._local_scanner: Optional[LocalScanner] = None
+        self._local_uploader: Optional[LocalUploader] = None
 
         # Initialize updater components
         self._release_downloader = ReleaseDownloader()
@@ -684,6 +690,245 @@ class Application(AppCallbacks):
         # Refresh dump list to show updated installation status
         self._window.update_status("Rescanning to update installation status...")
         self.on_scan()
+
+    def on_scan_local(self, volume_path: Path) -> None:
+        """Handle scan request for local volume."""
+        self._logger.info(f"Local scan requested for volume: {volume_path}")
+
+        # Prevent concurrent scans
+        if self._scan_in_progress:
+            self._logger.debug("Scan already in progress, ignoring request")
+            return
+
+        self._scan_in_progress = True
+        self._window.update_status(f"Scanning {volume_path} for game dumps...")
+
+        def scan_task():
+            try:
+                # Create scanner for this volume
+                scanner = LocalScanner(volume_path)
+                dumps = scanner.scan()
+                return dumps, None
+            except Exception as e:
+                return None, e
+
+        def on_scan_complete(result):
+            dumps, error = result.result if result.result else (None, None)
+            self._root.after(0, lambda: self._handle_local_scan_result(dumps, error, volume_path))
+
+        task = ThreadedTask(scan_task, on_complete=on_scan_complete)
+        task.start()
+
+    def _handle_local_scan_result(
+        self,
+        dumps: Optional[List[GameDump]],
+        error: Optional[Exception],
+        volume_path: Path
+    ) -> None:
+        """Handle local scan result on main thread."""
+        self._scan_in_progress = False
+
+        if error:
+            self._logger.error(f"Local scan failed: {error}")
+            message = f"Failed to scan {volume_path}:\n\n{error}"
+            self._window.show_error("Scan Error", message)
+            return
+
+        if dumps is not None:
+            self._logger.info(f"Found {len(dumps)} game dumps on {volume_path}")
+            self._window.set_dumps(dumps)
+
+    def on_upload_local(self, selected_dumps: List[GameDump]) -> None:
+        """Handle upload request for local dumps."""
+        self._logger.info(f"Local upload requested for {len(selected_dumps)} dumps")
+
+        # Ask user to select dump_runner files
+        elf_path = self._select_file(
+            "Select dump_runner.elf",
+            [("ELF files", "*.elf"), ("All files", "*.*")]
+        )
+        if not elf_path:
+            return
+
+        js_path = self._select_file(
+            "Select homebrew.js",
+            [("JavaScript files", "*.js"), ("All files", "*.*")]
+        )
+        if not js_path:
+            return
+
+        # Check if files already exist (overwrite confirmation)
+        dumps_with_existing = self._check_existing_files(selected_dumps)
+        if dumps_with_existing:
+            dump_names = "\n".join([d.display_name for d in dumps_with_existing[:5]])
+            if len(dumps_with_existing) > 5:
+                dump_names += f"\n... and {len(dumps_with_existing) - 5} more"
+
+            if not self._window.show_warning(
+                "Overwrite Confirmation",
+                f"The following dumps already have dump_runner files:\n\n"
+                f"{dump_names}\n\n"
+                f"Do you want to overwrite them?"
+            ):
+                return
+
+        # Start the upload using local uploader
+        self._start_local_upload(selected_dumps, Path(elf_path), Path(js_path))
+
+    def on_upload_official_local(self, selected_dumps: List[GameDump]) -> None:
+        """Handle upload official release request for local dumps."""
+        self._logger.info(f"Local official upload requested for {len(selected_dumps)} dumps")
+
+        if not self._current_release:
+            self._logger.warning("No current release available")
+            self._window.show_error(
+                "No Release",
+                "No official release downloaded.\n\n"
+                "Please click 'Download Latest' first."
+            )
+            return
+
+        if not self._current_release.files_valid:
+            self._logger.error("Release files are not valid")
+            self._window.show_error(
+                "Invalid Release",
+                "The downloaded release files are missing or invalid.\n\n"
+                "Please download the release again."
+            )
+            return
+
+        self._logger.info(
+            f"Upload official release {self._current_release.version} "
+            f"to {len(selected_dumps)} local dumps"
+        )
+
+        # Check if files already exist (overwrite confirmation)
+        dumps_with_existing = self._check_existing_files(selected_dumps)
+        if dumps_with_existing:
+            dump_names = "\n".join([d.display_name for d in dumps_with_existing[:5]])
+            if len(dumps_with_existing) > 5:
+                dump_names += f"\n... and {len(dumps_with_existing) - 5} more"
+
+            if not self._window.show_warning(
+                "Overwrite Confirmation",
+                f"The following dumps already have dump_runner files:\n\n"
+                f"{dump_names}\n\n"
+                f"Do you want to overwrite them?"
+            ):
+                return
+
+        # Start the upload with official release files using local uploader
+        self._start_local_upload(
+            selected_dumps,
+            self._current_release.elf_path,
+            self._current_release.js_path
+        )
+
+    def _start_local_upload(
+        self,
+        dumps: List[GameDump],
+        elf_path: Path,
+        js_path: Path
+    ) -> None:
+        """Start the local upload process with progress dialog."""
+        self._logger.info(
+            f"Starting local upload of {elf_path.name} and {js_path.name} "
+            f"to {len(dumps)} dumps"
+        )
+
+        # Create local uploader
+        uploader = LocalUploader()
+
+        # Create and show upload dialog
+        self._upload_dialog = UploadDialog(
+            self._root,
+            dumps,
+            on_cancel=lambda: uploader.cancel()
+        )
+
+        # Run upload in background thread
+        def upload_task():
+            results = []
+            for i, dump in enumerate(dumps):
+                if uploader.is_cancelled:
+                    # Add cancelled result for remaining dumps
+                    from src.core.scanner_base import UploadResult
+                    results.append(UploadResult(
+                        dump_path=dump.path,
+                        success=False,
+                        error_message="Upload cancelled"
+                    ))
+                    continue
+
+                # Update current dump in dialog
+                self._root.after(0, lambda d=dump: self._update_current_dump(d))
+
+                # Upload to this dump
+                result = uploader.upload_to_dump(
+                    dump,
+                    elf_path,
+                    js_path
+                )
+                results.append(result)
+
+                # Log per-dump result
+                if result.success:
+                    self._logger.info(f"Upload to {dump.display_name} succeeded")
+                else:
+                    self._logger.error(
+                        f"Upload to {dump.display_name} failed: {result.error_message}"
+                    )
+
+                # Update dialog with result
+                self._root.after(0, lambda r=result: self._add_upload_result(r))
+
+            return results
+
+        def on_upload_complete(task_result):
+            results = task_result.result if task_result.result else []
+            self._root.after(0, lambda: self._handle_local_upload_complete(results, uploader))
+
+        task = ThreadedTask(upload_task, on_complete=on_upload_complete)
+        task.start()
+
+    def _handle_local_upload_complete(self, results: List[UploadResult], uploader: LocalUploader) -> None:
+        """Handle local upload completion (main thread)."""
+        if not self._upload_dialog:
+            return
+
+        cancelled = uploader.is_cancelled
+
+        # Complete the dialog
+        self._upload_dialog.complete(cancelled=cancelled)
+
+        # Log summary
+        if results:
+            successful = sum(1 for r in results if r.success)
+            failed = sum(1 for r in results if not r.success)
+
+            self._logger.info(
+                f"Local upload batch complete: {successful}/{len(results)} successful"
+            )
+
+            # Show summary in status bar
+            if cancelled:
+                self._window.update_status(
+                    f"Upload cancelled: {successful}/{len(results)} completed"
+                )
+            elif failed > 0:
+                self._window.update_status(
+                    f"Upload complete with {failed} failures"
+                )
+            else:
+                self._window.update_status(
+                    f"Upload complete: {successful} dumps updated"
+                )
+
+        # Rescan to update installation status
+        volume = self._window.get_selected_volume()
+        if volume:
+            self._window.update_status(f"Rescanning {volume} to update installation status...")
+            self.on_scan_local(volume)
 
     def run(self) -> None:
         """Start the application."""

@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.ftp.scanner import GameDump, InstallationStatus, LocationType
-from src.local.scanner import LocalScanner, PREDEFINED_PATHS, DUMP_FOLDER_PATTERN
+from src.local.scanner import LocalScanner, PREDEFINED_PATHS
 
 
 class TestLocalScannerInit:
@@ -54,13 +54,13 @@ class TestLocalScannerScan:
                     assert isinstance(scanner._last_scan, datetime)
 
     def test_finds_valid_dump_folders(self):
-        """Should find folders matching CUSAXXXXX pattern with param.sfo."""
+        """Should find any folder with eboot.bin file."""
         volume = Path("E:\\")
         scanner = LocalScanner(volume)
 
-        # Mock folder structure
+        # Mock folder structure - any folder name is acceptable
         mock_dump = MagicMock(spec=Path)
-        mock_dump.name = "CUSA12345"
+        mock_dump.name = "Game 1"
         mock_dump.is_dir.return_value = True
         mock_dump.__truediv__ = lambda self, other: MagicMock(spec=Path, exists=lambda: True)
 
@@ -72,13 +72,13 @@ class TestLocalScannerScan:
                     assert len(result) > 0
                     assert all(isinstance(d, GameDump) for d in result)
 
-    def test_skips_folders_without_param_sfo(self):
-        """Should skip folders without param.sfo file."""
+    def test_skips_folders_without_eboot_bin(self):
+        """Should skip folders without eboot.bin file."""
         volume = Path("E:\\")
         scanner = LocalScanner(volume)
 
         mock_dump = MagicMock(spec=Path)
-        mock_dump.name = "CUSA12345"
+        mock_dump.name = "Game 1"
         mock_dump.is_dir.return_value = True
         mock_dump.__truediv__ = lambda self, other: MagicMock(spec=Path, exists=lambda: False)
 
@@ -89,24 +89,33 @@ class TestLocalScannerScan:
 
                     assert len(result) == 0
 
-    def test_skips_invalid_folder_names(self):
-        """Should skip folders that don't match CUSAXXXXX pattern."""
+    def test_accepts_any_folder_name_with_eboot_bin(self):
+        """Should accept any folder name as long as eboot.bin exists."""
         volume = Path("E:\\")
         scanner = LocalScanner(volume)
 
-        invalid_folders = [
-            MagicMock(spec=Path, name="NotAGame", is_dir=lambda: True),
-            MagicMock(spec=Path, name="CUSA", is_dir=lambda: True),
-            MagicMock(spec=Path, name="CUSA123", is_dir=lambda: True),  # Too short
-            MagicMock(spec=Path, name="CUSAABCDE", is_dir=lambda: True),  # Not digits
-        ]
+        # Create folders with various names - all should be accepted if they have eboot.bin
+        mock_folder1 = MagicMock(spec=Path)
+        mock_folder1.name = "Game 1"
+        mock_folder1.is_dir.return_value = True
+        mock_folder1.__truediv__ = lambda self, other: MagicMock(spec=Path, exists=lambda: True)
+
+        mock_folder2 = MagicMock(spec=Path)
+        mock_folder2.name = "My Custom Game"
+        mock_folder2.is_dir.return_value = True
+        mock_folder2.__truediv__ = lambda self, other: MagicMock(spec=Path, exists=lambda: True)
 
         with patch("pathlib.Path.exists", return_value=True):
             with patch("pathlib.Path.is_dir", return_value=True):
-                with patch("pathlib.Path.iterdir", return_value=invalid_folders):
+                with patch("pathlib.Path.iterdir", return_value=[mock_folder1, mock_folder2]):
                     result = scanner.scan()
 
-                    assert len(result) == 0
+                    # Scanner scans 2 predefined paths, so 2 folders * 2 paths = 4 results
+                    assert len(result) == 4
+                    # Check that both folder names appear in results
+                    names = [dump.name for dump in result]
+                    assert names.count("Game 1") == 2
+                    assert names.count("My Custom Game") == 2
 
     def test_handles_permission_errors(self):
         """Should handle permission errors gracefully."""
@@ -158,15 +167,15 @@ class TestLocalScannerScan:
 class TestCheckDumpFolder:
     """Test LocalScanner._check_dump_folder() method."""
 
-    def test_validates_cusa_pattern(self):
-        """Should validate CUSAXXXXX folder name pattern."""
+    def test_accepts_any_folder_name_with_eboot_bin(self):
+        """Should accept any folder name as long as eboot.bin exists."""
         scanner = LocalScanner(Path("E:\\"))
 
         valid_folders = [
             Path("E:\\homebrew\\CUSA12345"),
-            Path("E:\\homebrew\\CUSA00000"),
-            Path("E:\\homebrew\\CUSA99999"),
-            Path("E:\\homebrew\\cusa12345"),  # Case insensitive
+            Path("E:\\homebrew\\Game 1"),
+            Path("E:\\homebrew\\My Custom Game"),
+            Path("E:\\homebrew\\Spider-Man"),
         ]
 
         for folder in valid_folders:
@@ -175,23 +184,23 @@ class TestCheckDumpFolder:
                 assert result is not None
                 assert result.name == folder.name
 
-    def test_rejects_invalid_patterns(self):
-        """Should reject folder names that don't match pattern."""
+    def test_rejects_folders_without_eboot_bin(self):
+        """Should reject folders that don't have eboot.bin file."""
         scanner = LocalScanner(Path("E:\\"))
 
-        invalid_folders = [
-            Path("E:\\homebrew\\CUSA1234"),  # Too short
-            Path("E:\\homebrew\\CUSA123456"),  # Too long
-            Path("E:\\homebrew\\CUSAABCDE"),  # Not digits
-            Path("E:\\homebrew\\GAME12345"),  # Wrong prefix
+        test_folders = [
+            Path("E:\\homebrew\\CUSA12345"),
+            Path("E:\\homebrew\\Game 1"),
+            Path("E:\\homebrew\\Random Folder"),
         ]
 
-        for folder in invalid_folders:
-            result = scanner._check_dump_folder(folder)
-            assert result is None
+        for folder in test_folders:
+            with patch("pathlib.Path.exists", return_value=False):
+                result = scanner._check_dump_folder(folder)
+                assert result is None
 
-    def test_requires_param_sfo(self):
-        """Should require param.sfo file to be present."""
+    def test_requires_eboot_bin(self):
+        """Should require eboot.bin file to be present."""
         scanner = LocalScanner(Path("E:\\"))
         folder = Path("E:\\homebrew\\CUSA12345")
 
@@ -302,35 +311,3 @@ class TestRefresh:
 
             # Should return dump unchanged (status will be stale)
             assert refreshed == dump
-
-
-class TestDumpFolderPattern:
-    """Test DUMP_FOLDER_PATTERN regex."""
-
-    def test_matches_valid_cusa_codes(self):
-        """Should match valid CUSAXXXXX codes."""
-        valid_codes = [
-            "CUSA00000",
-            "CUSA12345",
-            "CUSA99999",
-            "cusa12345",  # Case insensitive
-            "CuSa12345",  # Mixed case
-        ]
-
-        for code in valid_codes:
-            assert DUMP_FOLDER_PATTERN.match(code) is not None
-
-    def test_rejects_invalid_codes(self):
-        """Should reject invalid codes."""
-        invalid_codes = [
-            "CUSA1234",  # Too short
-            "CUSA123456",  # Too long
-            "CUSAABCDE",  # Not digits
-            "GAME12345",  # Wrong prefix
-            "CUSA 12345",  # Space
-            "",  # Empty
-            "12345",  # No prefix
-        ]
-
-        for code in invalid_codes:
-            assert DUMP_FOLDER_PATTERN.match(code) is None

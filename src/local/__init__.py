@@ -8,6 +8,6 @@ This module provides:
 
 from src.local.scanner import LocalScanner
 from src.local.uploader import LocalUploader
-from src.local.volumes import get_available_volumes
+from src.local.volumes import get_available_volumes, VolumeInfo
 
-__all__ = ["LocalScanner", "LocalUploader", "get_available_volumes"]
+__all__ = ["LocalScanner", "LocalUploader", "get_available_volumes", "VolumeInfo"]

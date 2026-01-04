@@ -17,6 +17,7 @@ from src.ftp.connection import ConnectionState
 from src.ftp.uploader import UploadProgress, UploadResult
 from src.core.scanner_base import ScanMode
 from src.local import get_available_volumes
+from src.local.volumes import VolumeInfo
 
 logger = logging.getLogger("ps5_dump_runner.main_window")
 
@@ -98,6 +99,7 @@ class MainWindow:
         """
         self._root = root
         self._callbacks = callbacks
+        self._available_volumes: List[VolumeInfo] = []
 
         self._setup_window()
         self._create_menu()
@@ -165,16 +167,28 @@ class MainWindow:
 
         # Volume selector frame (for Local mode)
         self._volume_frame = ttk.LabelFrame(self._root, text="Volume Selection")
-        self._volume_label = ttk.Label(self._volume_frame, text="Select Drive:")
+
+        # Warning label
+        self._volume_warning = ttk.Label(
+            self._volume_frame,
+            text="⚠ Choose the Removable USB Drive that will be plugged into your PS5",
+            foreground="#dc2626",
+            font=("TkDefaultFont", 9, "bold")
+        )
+
+        # Controls frame for label, combo, and button
+        self._volume_controls_frame = ttk.Frame(self._volume_frame)
+
+        self._volume_label = ttk.Label(self._volume_controls_frame, text="Select Drive:")
         self._volume_var = tk.StringVar()
         self._volume_combo = ttk.Combobox(
-            self._volume_frame,
+            self._volume_controls_frame,
             textvariable=self._volume_var,
             state="readonly",
-            width=40
+            width=50
         )
         self._refresh_volumes_btn = ttk.Button(
-            self._volume_frame,
+            self._volume_controls_frame,
             text="Refresh",
             command=self._refresh_volumes
         )
@@ -245,9 +259,15 @@ class MainWindow:
 
         # Volume selector frame (initially hidden)
         # Layout widgets inside volume frame
-        self._volume_label.pack(side=tk.LEFT, padx=5, pady=5)
-        self._volume_combo.pack(side=tk.LEFT, padx=5, pady=5)
-        self._refresh_volumes_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        self._volume_warning.pack(side=tk.TOP, fill=tk.X, padx=5, pady=(5, 10))
+
+        # Pack the controls frame that was created in _create_widgets
+        self._volume_controls_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=(0, 5))
+
+        # Pack controls into the controls frame
+        self._volume_label.pack(side=tk.LEFT, padx=(0, 5))
+        self._volume_combo.pack(side=tk.LEFT, padx=(0, 5), fill=tk.X, expand=True)
+        self._refresh_volumes_btn.pack(side=tk.LEFT)
 
         # Main content in middle (expandable)
         self._content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -303,19 +323,32 @@ class MainWindow:
         """Refresh available volumes list."""
         try:
             volumes = get_available_volumes()
-            volume_strings = [str(v) for v in volumes]
+            self._available_volumes = volumes
+
+            # Create display strings with USB indicator for removable drives
+            volume_strings = []
+            for vol in volumes:
+                if vol.is_removable:
+                    display = f"[USB] {vol.label}"
+                else:
+                    display = vol.label
+                volume_strings.append(display)
+
             self._volume_combo['values'] = volume_strings
 
-            # Select first volume if available
-            if volume_strings:
+            # Select first removable volume if available, otherwise first volume
+            removable_idx = next((i for i, v in enumerate(volumes) if v.is_removable), None)
+            if removable_idx is not None:
+                self._volume_combo.current(removable_idx)
+            elif volume_strings:
                 self._volume_combo.current(0)
-                # Enable scan button if in local mode
-                if ScanMode(self._scan_mode.get()) == ScanMode.LOCAL:
-                    self._scan_btn.config(state=tk.NORMAL)
-            else:
+
+            # Enable scan button if in local mode and volume is selected
+            if volume_strings and ScanMode(self._scan_mode.get()) == ScanMode.LOCAL:
+                self._scan_btn.config(state=tk.NORMAL)
+            elif ScanMode(self._scan_mode.get()) == ScanMode.LOCAL:
                 self._volume_var.set("")
-                if ScanMode(self._scan_mode.get()) == ScanMode.LOCAL:
-                    self._scan_btn.config(state=tk.DISABLED)
+                self._scan_btn.config(state=tk.DISABLED)
 
             logger.debug(f"Found {len(volumes)} volumes: {volume_strings}")
         except Exception as e:
@@ -341,15 +374,16 @@ class MainWindow:
         if mode == ScanMode.FTP:
             self._callbacks.on_scan()
         else:  # LOCAL
-            volume_str = self._volume_var.get()
-            if not volume_str:
+            # Get the selected volume from the combobox index
+            selected_idx = self._volume_combo.current()
+            if selected_idx < 0 or selected_idx >= len(self._available_volumes):
                 messagebox.showwarning(
                     "No Volume Selected",
                     "Please select a volume to scan."
                 )
                 return
-            volume_path = Path(volume_str)
-            self._callbacks.on_scan_local(volume_path)
+            volume_info = self._available_volumes[selected_idx]
+            self._callbacks.on_scan_local(volume_info.path)
 
     def _handle_upload(self) -> None:
         """Handle Upload Custom button click."""
@@ -560,8 +594,10 @@ class MainWindow:
         Returns:
             Path to selected volume, or None if no volume selected
         """
-        volume_str = self._volume_var.get()
-        return Path(volume_str) if volume_str else None
+        selected_idx = self._volume_combo.current()
+        if selected_idx < 0 or selected_idx >= len(self._available_volumes):
+            return None
+        return self._available_volumes[selected_idx].path
 
     def run(self) -> None:
         """Start the main event loop."""

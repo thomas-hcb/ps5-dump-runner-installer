@@ -67,9 +67,12 @@ class TestWindowsDrives:
             result = _get_windows_drives()
 
             # Should find C and D drives
-            assert Path("C:\\") in result
-            assert Path("D:\\") in result
             assert len(result) == 2
+            assert result[0].path == Path("C:\\")
+            assert result[1].path == Path("D:\\")
+            # Results should be VolumeInfo objects
+            assert all(hasattr(v, 'is_removable') for v in result)
+            assert all(hasattr(v, 'label') for v in result)
 
     def test_returns_empty_when_no_drives(self):
         """Should return empty list when no drives exist."""
@@ -77,8 +80,8 @@ class TestWindowsDrives:
             result = _get_windows_drives()
             assert result == []
 
-    def test_returns_path_objects(self):
-        """Should return Path objects, not strings."""
+    def test_returns_volume_info_objects(self):
+        """Should return VolumeInfo objects with Path inside."""
         def mock_exists(self):
             return str(self) == "C:\\"
 
@@ -86,8 +89,12 @@ class TestWindowsDrives:
             result = _get_windows_drives()
 
             assert len(result) == 1
-            assert isinstance(result[0], Path)
-            assert str(result[0]) == "C:\\"
+            # Should be VolumeInfo, not Path
+            assert hasattr(result[0], 'path')
+            assert hasattr(result[0], 'is_removable')
+            assert hasattr(result[0], 'label')
+            assert isinstance(result[0].path, Path)
+            assert str(result[0].path) == "C:\\"
 
 
 class TestMacOSVolumes:

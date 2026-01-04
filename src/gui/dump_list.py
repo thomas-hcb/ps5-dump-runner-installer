@@ -142,6 +142,7 @@ class DumpList(ttk.Frame):
                 LocationType.INTERNAL: "Internal",
                 LocationType.USB: "USB",
                 LocationType.EXTERNAL: "External",
+                LocationType.LOCAL: "Local",
                 LocationType.UNKNOWN: "Unknown",
             }.get(dump.location_type, "Unknown")
 
@@ -169,6 +170,7 @@ class DumpList(ttk.Frame):
         self._tree.tag_configure("internal", foreground="#1e40af")
         self._tree.tag_configure("usb", foreground="#047857")
         self._tree.tag_configure("external", foreground="#7c3aed")
+        self._tree.tag_configure("local", foreground="#dc2626")
 
     def _on_click(self, event: tk.Event) -> None:
         """Handle click events to toggle checkboxes."""
