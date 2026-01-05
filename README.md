@@ -215,7 +215,9 @@ pytest --cov=src --cov-report=html
 
 ### Building Executable
 
-#### Prerequisites
+#### Windows Build
+
+##### Prerequisites
 
 1. **Install Python 3.11+** from [python.org](https://www.python.org/downloads/)
 2. **Install dependencies**:
@@ -228,7 +230,7 @@ pytest --cov=src --cov-report=html
    pip install pyinstaller
    ```
 
-#### Build Steps
+##### Build Steps
 
 1. **Clone the repository** (if you haven't already):
    ```bash
@@ -248,7 +250,7 @@ pytest --cov=src --cov-report=html
 
 3. **Find the executable** at `build/dist/PS5DumpRunnerInstaller.exe`
 
-#### Build Output
+##### Build Output
 
 ```
 build/
@@ -258,11 +260,51 @@ build/
 └── ps5-dump-runner-installer.spec     # PyInstaller configuration
 ```
 
-#### Troubleshooting Build Issues
+##### Troubleshooting Build Issues
 
 - **"Module not found" errors**: Ensure all dependencies are installed with `pip install -r requirements.txt`
 - **Icon not found**: Verify `resources/icons/app_icon.ico` exists
 - **Antivirus blocking**: Some antivirus software may flag PyInstaller executables; add an exception if needed
+
+#### macOS Build
+
+##### Prerequisites
+
+- **macOS 11 (Big Sur)** or later
+- **Python 3.11+** (install via Homebrew: `brew install python@3.11`)
+- **PyInstaller**: `pip install pyinstaller`
+- **tkinter**: `brew install python-tk@3.11`
+
+##### Quick Build
+
+```bash
+# Install dependencies
+pip3 install -r requirements.txt
+
+# Make the build script executable
+chmod +x build/build-macos.sh
+
+# Run the build
+./build/build-macos.sh
+```
+
+The application will be built to: `build/dist/PS5DumpRunnerInstaller.app`
+
+##### Running the macOS App
+
+```bash
+# Open the application
+open build/dist/PS5DumpRunnerInstaller.app
+
+# Or run from command line
+build/dist/PS5DumpRunnerInstaller.app/Contents/MacOS/PS5DumpRunnerInstaller
+```
+
+**Note**: This is an unsigned build for local development only. On first launch, you may need to right-click and select "Open" to bypass macOS Gatekeeper warnings.
+
+##### Full Documentation
+
+For detailed macOS build instructions, icon creation, code signing, and distribution, see [docs/macos-build.md](docs/macos-build.md).
 
 ---
 

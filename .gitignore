@@ -1,5 +1,12 @@
+# MacOS
+.DS_Store
+
 # Project-specific
 build/dist/
+build/build/
+build/work/
+build/ps5-dump-runner-installer/
+build/PS5DumpRunnerInstaller/
 *.exe
 
 # IDE settings
@@ -16,7 +23,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -38,7 +44,7 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# Note: We keep build/*.spec files in version control
 
 # Installer logs
 pip-log.txt
