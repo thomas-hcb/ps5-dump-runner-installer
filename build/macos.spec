@@ -113,8 +113,8 @@ app = BUNDLE(
     info_plist={
         'CFBundleName': 'PS5 Dump Runner Installer',
         'CFBundleDisplayName': 'PS5 Dump Runner Installer',
-        'CFBundleVersion': '1.2.0',
-        'CFBundleShortVersionString': '1.2.0',
+        'CFBundleVersion': '1.3.0',
+        'CFBundleShortVersionString': '1.3.0',
         'CFBundlePackageType': 'APPL',
         'CFBundleSignature': '????',
         'NSHighResolutionCapable': 'True',
