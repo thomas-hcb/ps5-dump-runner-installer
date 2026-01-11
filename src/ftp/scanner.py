@@ -301,6 +301,47 @@ class DumpScanner:
         logger.debug(f"LIST fallback found {len(full_paths)} directories in {path}")
         return full_paths
 
+    def _list_files_in_dir(self, ftp, dir_path: str) -> list:
+        """
+        List all files (not directories) in a directory using CWD + LIST.
+
+        Args:
+            ftp: FTP connection object
+            dir_path: Directory path to list
+
+        Returns:
+            List of filenames (not full paths, just names)
+        """
+        current_dir = ftp.pwd()
+        files = []
+        try:
+            ftp.cwd(dir_path)
+            listing = []
+            ftp.dir(lambda line: listing.append(line))
+
+            for line in listing:
+                if not line.strip():
+                    continue
+                parts = line.split()
+                if len(parts) < 8:
+                    continue
+                permissions = parts[0]
+                # Files start with '-', directories start with 'd'
+                if permissions.startswith('-'):
+                    # Extract filename (last part, may contain spaces)
+                    filename = ' '.join(parts[8:])
+                    files.append(filename)
+
+            return files
+        except Exception as e:
+            logger.debug(f"Failed to list files in {dir_path}: {e}")
+            return []
+        finally:
+            try:
+                ftp.cwd(current_dir)
+            except Exception:
+                pass
+
     def _check_installation_status(self, dump: GameDump) -> None:
         """
         Check if dump_runner files are installed in a dump.
@@ -314,11 +355,11 @@ class DumpScanner:
         ftp = self._connection.ftp
 
         try:
-            files = self._nlst_with_retry(ftp, dump.path)
-            file_names = [f.split("/")[-1] for f in files]
+            # List all files in the dump directory
+            files = self._list_files_in_dir(ftp, dump.path)
 
-            dump.has_elf = "dump_runner.elf" in file_names
-            dump.has_js = "homebrew.js" in file_names
+            dump.has_elf = "dump_runner.elf" in files
+            dump.has_js = "homebrew.js" in files
 
             if dump.has_elf and dump.has_js:
                 # Files present, but we can't easily determine official vs experimental
@@ -329,8 +370,14 @@ class DumpScanner:
             else:
                 dump.installation_status = InstallationStatus.NOT_INSTALLED
 
+            logger.debug(f"Installation status for {dump.name}: has_elf={dump.has_elf}, has_js={dump.has_js}")
+
         except error_perm:
             # Can't access directory
+            dump.installation_status = InstallationStatus.UNKNOWN
+        except Exception as e:
+            # Other errors (like connection issues)
+            logger.warning(f"Failed to check installation status for {dump.name}: {e}")
             dump.installation_status = InstallationStatus.UNKNOWN
 
     def refresh(self, dump: GameDump) -> GameDump:

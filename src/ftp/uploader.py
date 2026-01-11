@@ -7,11 +7,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional, Union
 import threading
+import logging
 
 from src.core.scanner_base import UploadResult, CompletionCallback
 from src.ftp.connection import FTPConnectionManager
 from src.ftp.scanner import GameDump
 from src.ftp.exceptions import FTPNotConnectedError, FTPUploadError
+
+logger = logging.getLogger("ps5_dump_runner.uploader")
 
 
 @dataclass
@@ -99,11 +102,14 @@ class FileUploader:
         elf_uploaded = False
         js_uploaded = False
 
+        logger.info(f"Starting upload to {dump.display_name}")
+
         try:
             ftp = self._connection.ftp
 
             # Upload dump_runner.elf
             if not self._cancelled.is_set():
+                logger.info(f"Uploading dump_runner.elf to {dump.display_name}")
                 bytes_sent = self._upload_file(
                     ftp,
                     elf_path,
@@ -112,9 +118,11 @@ class FileUploader:
                 )
                 total_bytes += bytes_sent
                 elf_uploaded = True
+                logger.info(f"dump_runner.elf uploaded successfully ({bytes_sent} bytes)")
 
             # Upload homebrew.js
             if not self._cancelled.is_set():
+                logger.info(f"Uploading homebrew.js to {dump.display_name}")
                 bytes_sent = self._upload_file(
                     ftp,
                     js_path,
@@ -123,10 +131,12 @@ class FileUploader:
                 )
                 total_bytes += bytes_sent
                 js_uploaded = True
+                logger.info(f"homebrew.js uploaded successfully ({bytes_sent} bytes)")
 
             duration = time.time() - start_time
 
             if self._cancelled.is_set():
+                logger.warning(f"Upload to {dump.display_name} cancelled")
                 return UploadResult(
                     dump_path=dump.path,
                     success=False,
@@ -137,6 +147,7 @@ class FileUploader:
                     duration_seconds=duration
                 )
 
+            logger.info(f"Upload to {dump.display_name} completed successfully ({total_bytes} bytes in {duration:.1f}s)")
             return UploadResult(
                 dump_path=dump.path,
                 success=True,
@@ -148,6 +159,7 @@ class FileUploader:
 
         except Exception as e:
             duration = time.time() - start_time
+            logger.error(f"Upload to {dump.display_name} failed: {e}")
             return UploadResult(
                 dump_path=dump.path,
                 success=False,
