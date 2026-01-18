@@ -104,7 +104,7 @@ class LocalUploader:
             duration = time.time() - start_time
             logger.info(f"Successfully copied files to {dump.name} in {duration:.2f}s")
 
-            return UploadResult(dump_path=dump.path, success=True)
+            return UploadResult(dump_path=dump.path, success=True, duration_seconds=duration)
 
         except PermissionError as e:
             duration = time.time() - start_time
@@ -114,7 +114,7 @@ class LocalUploader:
             )
             logger.error(f"Permission error for {dump.name}: {e}")
             return UploadResult(
-                dump_path=dump.path, success=False, error_message=error_msg
+                dump_path=dump.path, success=False, error_message=error_msg, duration_seconds=duration
             )
 
         except OSError as e:
@@ -129,7 +129,7 @@ class LocalUploader:
 
             logger.error(f"OS error for {dump.name}: {e}")
             return UploadResult(
-                dump_path=dump.path, success=False, error_message=error_msg
+                dump_path=dump.path, success=False, error_message=error_msg, duration_seconds=duration
             )
 
         except Exception as e:
@@ -137,7 +137,7 @@ class LocalUploader:
             error_msg = f"Unexpected error: {str(e)}"
             logger.error(f"Unexpected error for {dump.name}: {e}", exc_info=True)
             return UploadResult(
-                dump_path=dump.path, success=False, error_message=error_msg
+                dump_path=dump.path, success=False, error_message=error_msg, duration_seconds=duration
             )
 
     def upload_batch(
