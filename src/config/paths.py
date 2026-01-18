@@ -14,19 +14,23 @@ APP_NAME = "PS5DumpRunnerInstaller"
 
 
 # PS5 FTP scan paths (directories containing game dumps)
+# Note: PS5 only supports ext0 and ext1 for external storage
+# Order matters: most common paths first to minimize connection issues
 SCAN_PATHS: List[str] = [
-    # Internal storage - homebrew
+    # Primary USB device (most common) - scan both homebrew and etaHEN together
+    "/mnt/usb0/homebrew/",
+    "/mnt/usb0/etaHEN/games/",
+    # Extended storage devices (ext0-ext1) - homebrew and etaHEN
+    "/mnt/ext0/homebrew/",
+    "/mnt/ext0/etaHEN/games/",
+    "/mnt/ext1/homebrew/",
+    "/mnt/ext1/etaHEN/games/",
+    # Internal storage
     "/data/homebrew/",
-    # Internal storage - etaHEN
     "/data/etaHEN/games/",
-    # USB storage devices (usb0-usb7) - homebrew
-    *[f"/mnt/usb{i}/homebrew/" for i in range(8)],
-    # USB storage devices (usb0-usb6) - etaHEN
-    *[f"/mnt/usb{i}/etaHEN/games/" for i in range(7)],
-    # Extended storage devices (ext0-ext7) - homebrew
-    *[f"/mnt/ext{i}/homebrew/" for i in range(8)],
-    # Extended storage devices (ext0-ext1) - etaHEN
-    *[f"/mnt/ext{i}/etaHEN/games/" for i in range(2)],
+    # Additional USB devices (usb1-usb7) - less common, scan last
+    *[f"/mnt/usb{i}/homebrew/" for i in range(1, 8)],
+    *[f"/mnt/usb{i}/etaHEN/games/" for i in range(1, 7)],
 ]
 
 

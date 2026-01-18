@@ -200,6 +200,18 @@ class TestDumpScanner:
         mock_connection.is_connected = True
         mock_connection.ftp = mock_ftp
 
+        # Mock pwd to return current directory
+        mock_ftp.pwd.return_value = "/"
+
+        # Mock cwd - only /data/homebrew/ and its subdirs exist
+        def mock_cwd(path):
+            if path in ["/", "/data/homebrew/", "/data/homebrew/Game1", "/data/homebrew/Game2"]:
+                return  # Success
+            else:
+                raise error_perm("550 No such directory")
+
+        mock_ftp.cwd.side_effect = mock_cwd
+
         # Mock nlst to return different results for different paths
         def mock_nlst(path):
             if path == "/data/homebrew/":
@@ -226,8 +238,16 @@ class TestDumpScanner:
         mock_connection.is_connected = True
         mock_connection.ftp = mock_ftp
 
-        # All paths raise permission error (don't exist)
-        mock_ftp.nlst.side_effect = error_perm("550 No such directory")
+        # Mock pwd to return current directory
+        mock_ftp.pwd.return_value = "/"
+
+        # All paths raise permission error in CWD check (don't exist)
+        def mock_cwd(path):
+            if path == "/":
+                return  # Root always works
+            raise error_perm("550 No such directory")
+
+        mock_ftp.cwd.side_effect = mock_cwd
 
         scanner = DumpScanner(mock_connection)
         dumps = scanner.scan()
@@ -241,6 +261,18 @@ class TestDumpScanner:
         mock_connection.is_connected = True
         mock_connection.ftp = mock_ftp
 
+        # Mock pwd to return current directory
+        mock_ftp.pwd.return_value = "/"
+
+        # Mock cwd - only /data/homebrew/ exists
+        def mock_cwd(path):
+            if path == "/" or path == "/data/homebrew/" or path == "/data/homebrew/InstalledGame":
+                return  # Success
+            else:
+                raise error_perm("550 No such directory")
+
+        mock_ftp.cwd.side_effect = mock_cwd
+
         def mock_nlst(path):
             if path == "/data/homebrew/":
                 return ["/data/homebrew/InstalledGame"]
@@ -250,6 +282,15 @@ class TestDumpScanner:
                 raise error_perm("550 No such directory")
 
         mock_ftp.nlst.side_effect = mock_nlst
+
+        # Mock dir for _list_files_in_dir (used by _check_installation_status)
+        def mock_dir(callback):
+            # Simulate LIST output for /data/homebrew/InstalledGame
+            callback("-rw-r--r-- 1 root root 12345 Jan 01 00:00 dump_runner.elf")
+            callback("-rw-r--r-- 1 root root 1234 Jan 01 00:00 homebrew.js")
+            callback("-rw-r--r-- 1 root root 100 Jan 01 00:00 other.txt")
+
+        mock_ftp.dir.side_effect = mock_dir
 
         scanner = DumpScanner(mock_connection)
         dumps = scanner.scan()
@@ -350,10 +391,25 @@ class TestScanPaths:
         for i in range(7):
             assert f"/mnt/usb{i}/etaHEN/games/" in SCAN_PATHS
 
+    def test_scan_paths_prioritizes_common_paths(self):
+        """Test SCAN_PATHS has common paths first to minimize connection issues."""
+        # usb0, ext0, ext1 should come before usb1-usb7
+        usb0_idx = SCAN_PATHS.index("/mnt/usb0/homebrew/")
+        ext0_idx = SCAN_PATHS.index("/mnt/ext0/homebrew/")
+        ext1_idx = SCAN_PATHS.index("/mnt/ext1/homebrew/")
+        usb1_idx = SCAN_PATHS.index("/mnt/usb1/homebrew/")
+
+        assert usb0_idx < usb1_idx, "usb0 should be scanned before usb1"
+        assert ext0_idx < usb1_idx, "ext0 should be scanned before usb1"
+        assert ext1_idx < usb1_idx, "ext1 should be scanned before usb1"
+
     def test_scan_paths_includes_homebrew_external(self):
-        """Test SCAN_PATHS includes external homebrew paths."""
-        for i in range(8):
+        """Test SCAN_PATHS includes external homebrew paths (ext0-ext1 only)."""
+        for i in range(2):
             assert f"/mnt/ext{i}/homebrew/" in SCAN_PATHS
+        # ext2-ext7 should NOT be in SCAN_PATHS (PS5 only supports ext0-ext1)
+        for i in range(2, 8):
+            assert f"/mnt/ext{i}/homebrew/" not in SCAN_PATHS
 
     def test_scan_paths_includes_etahen_external(self):
         """Test SCAN_PATHS includes external etaHEN paths."""

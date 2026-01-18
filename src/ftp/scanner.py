@@ -166,6 +166,18 @@ class DumpScanner:
         for base_path in SCAN_PATHS:
             try:
                 logger.debug(f"Scanning path: {base_path}")
+
+                # Quick existence check using CWD before trying to list
+                # This is safer than NLST/LIST which can cause connection issues
+                try:
+                    current_dir = ftp.pwd()
+                    ftp.cwd(base_path)
+                    ftp.cwd(current_dir)  # Return to original dir
+                except error_perm:
+                    # Directory doesn't exist, skip it
+                    logger.debug(f"Path does not exist: {base_path}")
+                    continue
+
                 # Try to list the directory with retry
                 entries = self._nlst_with_retry(ftp, base_path)
                 logger.debug(f"Found {len(entries)} entries in {base_path}")
@@ -209,7 +221,34 @@ class DumpScanner:
                 # Path doesn't exist or can't access, skip
                 logger.debug(f"Path not accessible: {base_path}")
                 continue
+            except OSError as e:
+                # Connection was lost (WinError 10053, etc.)
+                error_str = str(e)
+                if "10053" in error_str or "10054" in error_str:
+                    # Try to check if connection is still alive with NOOP
+                    try:
+                        ftp.voidcmd("NOOP")
+                        # Connection still alive, just skip this path
+                        logger.warning(f"Error scanning {base_path}: {e} (connection recovered)")
+                        continue
+                    except Exception:
+                        # Connection is truly dead
+                        logger.warning(f"Connection lost while scanning {base_path}, skipping remaining paths")
+                        break
+                logger.warning(f"Error scanning {base_path}: {e}")
+                continue
             except Exception as e:
+                # Check for "150 Opening data transfer" error - PS5 FTP server quirk
+                error_str = str(e)
+                if "150" in error_str:
+                    # This is a failed data transfer, try to recover
+                    try:
+                        ftp.voidcmd("NOOP")
+                        logger.debug(f"Path {base_path} failed with 150 error, but connection still alive")
+                        continue
+                    except Exception:
+                        logger.warning(f"Connection lost after 150 error on {base_path}, skipping remaining paths")
+                        break
                 # Log other errors but continue scanning other paths
                 logger.warning(f"Error scanning {base_path}: {e}")
                 continue
