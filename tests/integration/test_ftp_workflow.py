@@ -105,8 +105,8 @@ class TestDumpScannerWorkflow:
         internal_dumps = scanner.get_dumps_by_location(LocationType.INTERNAL)
         assert len(internal_dumps) >= 3
 
-        # Check we found USB dump
-        usb_dumps = scanner.get_dumps_by_location(LocationType.USB)
+        # Check we found USB dump (USB0 is the specific type for /mnt/usb0/)
+        usb_dumps = scanner.get_dumps_by_location(LocationType.USB0)
         assert len(usb_dumps) >= 1
 
         connection_manager.disconnect()

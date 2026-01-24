@@ -179,8 +179,9 @@ class DumpScanner:
                     continue
 
                 # Try to list the directory with retry
-                entries = self._nlst_with_retry(ftp, base_path)
-                logger.debug(f"Found {len(entries)} entries in {base_path}")
+                # Track if LIST was used (entries are already verified as directories)
+                entries, used_list = self._nlst_with_retry(ftp, base_path, return_source=True)
+                logger.debug(f"Found {len(entries)} entries in {base_path} (LIST={used_list})")
 
                 for entry in entries:
                     # Skip if it's the base path itself
@@ -201,21 +202,32 @@ class DumpScanner:
                     else:
                         full_path = f"{base_path.rstrip('/')}/{entry}"
 
-                    # Check if it's a directory by trying to list it
-                    try:
-                        self._nlst_with_retry(ftp, full_path)
-                        # If we can list it, it's a directory
+                    # If LIST was used, entries are already known to be directories
+                    # (LIST output includes permissions, we only return 'd' entries)
+                    # Skip verification for LIST-derived entries to avoid CWD issues
+                    # with special characters in directory names
+                    if used_list:
+                        # Trust LIST output - it already filtered to directories only
                         dump = GameDump.from_path(full_path)
                         self._check_installation_status(dump)
                         self._dumps.append(dump)
-                        logger.debug(f"Added dump: {dump.name}")
-                    except error_perm:
-                        # Not a directory or can't access, skip
-                        continue
-                    except Exception as e:
-                        # Log but continue with other entries
-                        logger.warning(f"Error checking {full_path}: {e}")
-                        continue
+                        logger.debug(f"Added dump (from LIST): {dump.name}")
+                    else:
+                        # NLST doesn't provide type info, verify it's a directory
+                        try:
+                            self._nlst_with_retry(ftp, full_path)
+                            # If we can list it, it's a directory
+                            dump = GameDump.from_path(full_path)
+                            self._check_installation_status(dump)
+                            self._dumps.append(dump)
+                            logger.debug(f"Added dump: {dump.name}")
+                        except error_perm:
+                            # Not a directory or can't access, skip
+                            continue
+                        except Exception as e:
+                            # Log but continue with other entries
+                            logger.warning(f"Error checking {full_path}: {e}")
+                            continue
 
             except error_perm:
                 # Path doesn't exist or can't access, skip
@@ -257,7 +269,7 @@ class DumpScanner:
         logger.info(f"Scan complete: found {len(self._dumps)} dumps")
         return self._dumps
 
-    def _nlst_with_retry(self, ftp, path: str, retries: int = 2) -> list:
+    def _nlst_with_retry(self, ftp, path: str, retries: int = 2, return_source: bool = False):
         """
         List directory with retry on transient connection errors.
 
@@ -268,9 +280,11 @@ class DumpScanner:
             ftp: FTP connection object
             path: Directory path to list
             retries: Number of retry attempts
+            return_source: If True, return tuple (entries, used_list_fallback)
 
         Returns:
             List of entries from nlst or LIST (fallback)
+            If return_source=True: tuple (entries, used_list_fallback)
 
         Raises:
             error_perm: If path doesn't exist or permission denied
@@ -281,12 +295,14 @@ class DumpScanner:
 
         for attempt in range(retries + 1):
             try:
-                return ftp.nlst(path)
+                result = ftp.nlst(path)
+                return (result, False) if return_source else result
             except error_perm:
                 # NLST may not be supported - try LIST fallback
                 logger.debug(f"NLST failed for {path}, attempting LIST fallback")
                 try:
-                    return self._list_with_fallback(ftp, path)
+                    result = self._list_with_fallback(ftp, path)
+                    return (result, True) if return_source else result
                 except error_perm:
                     # Permission error on LIST too, don't retry
                     raise
@@ -335,14 +351,13 @@ class DumpScanner:
         def capture_line(line):
             listing.append(line)
 
-        # FTP servers often can't handle paths with special characters (like [ ] in game names)
-        # Solution: Change directory first, then list current directory
+        # CWD to target directory, list contents, then return
         current_dir = ftp.pwd()  # Save current directory
         try:
             ftp.cwd(path)  # Change to target directory
             ftp.dir(capture_line)  # List current directory (no path argument)
             ftp.cwd(current_dir)  # Return to original directory
-        except Exception as dir_error:
+        except Exception:
             # Try to restore original directory even if listing failed
             try:
                 ftp.cwd(current_dir)

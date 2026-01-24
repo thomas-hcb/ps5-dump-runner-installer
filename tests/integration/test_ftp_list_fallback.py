@@ -46,9 +46,10 @@ class TestNLSTListFallback:
 
         # NLST fails with error_perm (command not supported)
         mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
+        mock_ftp.pwd.return_value = "/"
 
-        # LIST succeeds with Unix-style output
-        def retrlines_side_effect(cmd, callback):
+        # LIST succeeds with Unix-style output via ftp.dir()
+        def dir_side_effect(callback):
             lines = [
                 "drwxr-xr-x  2 root root 4096 Jan  1 12:00 CUSA12345",
                 "drwxr-xr-x  2 root root 4096 Jan  1 12:00 CUSA67890"
@@ -56,7 +57,7 @@ class TestNLSTListFallback:
             for line in lines:
                 callback(line)
 
-        mock_ftp.retrlines.side_effect = retrlines_side_effect
+        mock_ftp.dir.side_effect = dir_side_effect
 
         scanner = DumpScanner(mock_connection)
 
@@ -65,9 +66,9 @@ class TestNLSTListFallback:
 
         # Verify NLST was attempted
         mock_ftp.nlst.assert_called_once()
-        # Verify LIST fallback was used
-        mock_ftp.retrlines.assert_called_once()
-        assert "LIST /data/homebrew" in mock_ftp.retrlines.call_args[0][0]
+        # Verify LIST fallback was used (via cwd + dir)
+        mock_ftp.cwd.assert_called()
+        mock_ftp.dir.assert_called_once()
 
         # Verify result contains parsed directories as full paths
         assert len(result) == 2
@@ -84,9 +85,10 @@ class TestNLSTListFallback:
 
         # NLST fails
         mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
+        mock_ftp.pwd.return_value = "/"
 
-        # LIST returns mixed content (files and directories)
-        def retrlines_side_effect(cmd, callback):
+        # LIST returns mixed content (files and directories) via ftp.dir()
+        def dir_side_effect(callback):
             lines = [
                 "drwxr-xr-x  2 root root 4096 Jan  1 12:00 GameDir1",
                 "-rw-r--r--  1 root root 1024 Jan  1 12:00 file.txt",
@@ -96,7 +98,7 @@ class TestNLSTListFallback:
             for line in lines:
                 callback(line)
 
-        mock_ftp.retrlines.side_effect = retrlines_side_effect
+        mock_ftp.dir.side_effect = dir_side_effect
 
         scanner = DumpScanner(mock_connection)
 
@@ -118,9 +120,10 @@ class TestNLSTListFallback:
 
         # NLST fails
         mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
+        mock_ftp.pwd.return_value = "/"
 
-        # LIST returns empty output
-        mock_ftp.retrlines.side_effect = lambda cmd, callback: None
+        # LIST returns empty output via ftp.dir()
+        mock_ftp.dir.side_effect = lambda callback: None
 
         scanner = DumpScanner(mock_connection)
 
@@ -140,9 +143,10 @@ class TestNLSTListFallback:
 
         # NLST fails
         mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
+        mock_ftp.pwd.return_value = "/"
 
-        # LIST returns directories with spaces in names
-        def retrlines_side_effect(cmd, callback):
+        # LIST returns directories with spaces in names via ftp.dir()
+        def dir_side_effect(callback):
             lines = [
                 "drwxr-xr-x  2 root root 4096 Jan  1 12:00 Game Folder One",
                 "drwxr-xr-x  2 root root 4096 Jan  1 12:00 Another Game Folder"
@@ -150,7 +154,7 @@ class TestNLSTListFallback:
             for line in lines:
                 callback(line)
 
-        mock_ftp.retrlines.side_effect = retrlines_side_effect
+        mock_ftp.dir.side_effect = dir_side_effect
 
         scanner = DumpScanner(mock_connection)
 
@@ -172,9 +176,10 @@ class TestNLSTListFallback:
 
         # NLST fails with error_perm
         mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
+        mock_ftp.pwd.return_value = "/"
 
-        # LIST also fails
-        mock_ftp.retrlines.side_effect = error_perm("550 Permission denied")
+        # CWD also fails (path doesn't exist)
+        mock_ftp.cwd.side_effect = error_perm("550 Permission denied")
 
         scanner = DumpScanner(mock_connection)
 
@@ -192,9 +197,10 @@ class TestNLSTListFallback:
 
         # NLST fails
         mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
+        mock_ftp.pwd.return_value = "/"
 
-        # LIST returns . and .. along with real directories
-        def retrlines_side_effect(cmd, callback):
+        # LIST returns . and .. along with real directories via ftp.dir()
+        def dir_side_effect(callback):
             lines = [
                 "drwxr-xr-x  2 root root 4096 Jan  1 12:00 .",
                 "drwxr-xr-x  2 root root 4096 Jan  1 12:00 ..",
@@ -203,7 +209,7 @@ class TestNLSTListFallback:
             for line in lines:
                 callback(line)
 
-        mock_ftp.retrlines.side_effect = retrlines_side_effect
+        mock_ftp.dir.side_effect = dir_side_effect
 
         scanner = DumpScanner(mock_connection)
 
@@ -228,11 +234,12 @@ class TestNLSTListFallback:
             error_perm("500 NLST not supported")  # Retry fails with error_perm
         ]
 
-        # LIST succeeds
-        def retrlines_side_effect(cmd, callback):
+        # LIST succeeds via ftp.dir()
+        def dir_side_effect(callback):
             callback("drwxr-xr-x  2 root root 4096 Jan  1 12:00 CUSA12345")
 
-        mock_ftp.retrlines.side_effect = retrlines_side_effect
+        mock_ftp.dir.side_effect = dir_side_effect
+        mock_ftp.pwd.return_value = "/"
         mock_ftp.voidcmd.return_value = None
 
         scanner = DumpScanner(mock_connection)
@@ -242,8 +249,8 @@ class TestNLSTListFallback:
 
         # Verify NLST was attempted twice before fallback
         assert mock_ftp.nlst.call_count == 2
-        # Verify LIST fallback was eventually used
-        mock_ftp.retrlines.assert_called_once()
+        # Verify LIST fallback was eventually used via cwd + dir
+        mock_ftp.dir.assert_called_once()
         assert len(result) == 1
 
 
@@ -261,6 +268,7 @@ class TestFullScanWithListFallback:
 
         # NOOP succeeds (connection alive)
         mock_ftp.voidcmd.return_value = None
+        mock_ftp.pwd.return_value = "/"
 
         # NLST fails with error_perm for base path scan
         nlst_call_count = [0]
@@ -276,9 +284,22 @@ class TestFullScanWithListFallback:
 
         mock_ftp.nlst.side_effect = nlst_side_effect
 
-        # LIST fallback returns directories
-        def retrlines_side_effect(cmd, callback):
-            if "/data/homebrew" in cmd:
+        # Track which directory we're listing
+        current_path = ["/data/homebrew"]
+
+        def cwd_side_effect(path):
+            if path == "/":
+                current_path[0] = "/"
+            elif path.startswith("/"):
+                current_path[0] = path
+            else:
+                current_path[0] = f"{current_path[0].rstrip('/')}/{path}"
+
+        mock_ftp.cwd.side_effect = cwd_side_effect
+
+        # LIST fallback returns directories via ftp.dir()
+        def dir_side_effect(callback):
+            if "homebrew" in current_path[0]:
                 lines = [
                     "drwxr-xr-x  2 root root 4096 Jan  1 12:00 CUSA12345",
                     "drwxr-xr-x  2 root root 4096 Jan  1 12:00 CUSA67890"
@@ -286,7 +307,7 @@ class TestFullScanWithListFallback:
                 for line in lines:
                     callback(line)
 
-        mock_ftp.retrlines.side_effect = retrlines_side_effect
+        mock_ftp.dir.side_effect = dir_side_effect
 
         scanner = DumpScanner(mock_connection)
 
@@ -310,18 +331,32 @@ class TestFullScanWithListFallback:
 
         # NOOP succeeds
         mock_ftp.voidcmd.return_value = None
+        mock_ftp.pwd.return_value = "/"
 
         # NLST always fails
         mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
 
-        # LIST returns different directories for different paths
-        def retrlines_side_effect(cmd, callback):
-            if "/data/homebrew" in cmd:
+        # Track which directory we're in
+        current_path = ["/"]
+
+        def cwd_side_effect(path):
+            if path == "/":
+                current_path[0] = "/"
+            elif path.startswith("/"):
+                current_path[0] = path
+            else:
+                current_path[0] = f"{current_path[0].rstrip('/')}/{path}"
+
+        mock_ftp.cwd.side_effect = cwd_side_effect
+
+        # LIST returns different directories for different paths via ftp.dir()
+        def dir_side_effect(callback):
+            if "/data/homebrew" in current_path[0]:
                 callback("drwxr-xr-x  2 root root 4096 Jan  1 12:00 CUSA12345")
-            elif "/mnt/usb0/homebrew" in cmd:
+            elif "/mnt/usb0/homebrew" in current_path[0]:
                 callback("drwxr-xr-x  2 root root 4096 Jan  1 12:00 CUSA67890")
 
-        mock_ftp.retrlines.side_effect = retrlines_side_effect
+        mock_ftp.dir.side_effect = dir_side_effect
 
         scanner = DumpScanner(mock_connection)
 
@@ -333,3 +368,47 @@ class TestFullScanWithListFallback:
         paths = [d.path for d in result]
         assert "/data/homebrew/CUSA12345" in paths
         assert "/mnt/usb0/homebrew/CUSA67890" in paths
+
+
+class TestSpecialCharacterPaths:
+    """Test handling of paths with special characters like brackets."""
+
+    def test_list_fallback_handles_brackets_in_names(self):
+        """Should handle directory names containing brackets via incremental CWD."""
+        # Setup
+        mock_connection = Mock()
+        mock_ftp = MagicMock()
+        mock_connection.is_connected = True
+        mock_connection.ftp = mock_ftp
+
+        # NLST fails
+        mock_ftp.nlst.side_effect = error_perm("500 NLST not supported")
+        mock_ftp.pwd.return_value = "/"
+
+        # Track navigation path
+        navigated_parts = []
+
+        def cwd_side_effect(path):
+            navigated_parts.append(path)
+
+        mock_ftp.cwd.side_effect = cwd_side_effect
+
+        # LIST returns directory with brackets in name via ftp.dir()
+        def dir_side_effect(callback):
+            lines = [
+                "drwxr-xr-x  2 root root 4096 Jan  1 12:00 Remnant 2 [ PPSA06693 ][ 1.37 ] [ 7.XX ]"
+            ]
+            for line in lines:
+                callback(line)
+
+        mock_ftp.dir.side_effect = dir_side_effect
+
+        scanner = DumpScanner(mock_connection)
+
+        # Execute
+        result = scanner._nlst_with_retry(mock_ftp, "/mnt/ext1/homebrew")
+
+        # Verify directory with brackets was found
+        assert len(result) == 1
+        assert "/mnt/ext1/homebrew/Remnant 2 [ PPSA06693 ][ 1.37 ] [ 7.XX ]" in result
+
